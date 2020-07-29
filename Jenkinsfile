@@ -22,7 +22,7 @@ pipeline {
                     docker_username=nikolahristovski
                     cat /var/lib/jenkins/docker_password.txt | docker login --username $docker_username --password-stdin
 
-                    project_version=$(mvn org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate -Dexpression=project.version -q -DforceStdout)
+                    project_version=$(/opt/maven/bin/mvn org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate -Dexpression=project.version -q -DforceStdout)
 
                     echo "project version is $project_version"
 
