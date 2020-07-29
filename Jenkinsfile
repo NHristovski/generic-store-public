@@ -10,7 +10,7 @@ pipeline {
 
     stages {
 
-        stage('Maven build'){
+        stage('Maven build') {
             steps {
                 sh "/opt/maven/bin/mvn -T 1C clean install"
             }
@@ -18,7 +18,28 @@ pipeline {
 
         stage('ll test again') {
             steps {
-                sh "ls -lah auth/target/"
+                sh '''
+                    docker_username=nikolahristovski
+                    cat /var/lib/jenkins/docker_password.txt | docker login --username $docker_username --password-stdin
+
+                    project_version=$(mvn org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate -Dexpression=project.version -q -DforceStdout)
+
+                    echo "project version is $project_version"
+
+                    docker_files=$(find -name "Dockerfile")
+
+                    base_dir=$(pwd)
+                    for df in $docker_files
+                    do
+                            image_name="${docker_username}/$(basename $(dirname $df)):${project_version}"
+                            echo "image name is $image_name"
+                           docker rmi $image_name
+
+                           cd $(dirname $df)
+                           docker build . -t $image_name
+                           cd $base_dir
+                    done
+                '''
             }
         }
 
