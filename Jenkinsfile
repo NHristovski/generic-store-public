@@ -9,15 +9,10 @@ pipeline {
     agent any
 
     stages {
-        stage('ll test') {
-            steps {
-                sh "ls -lah"
-            }
-        }
 
         stage('Maven build'){
             steps {
-                sh "mvn -T 4 clean install"
+                sh "/opt/maven/bin/mvn -T 1C clean install"
             }
         }
 
