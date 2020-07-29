@@ -31,12 +31,15 @@ pipeline {
                     base_dir=$(pwd)
                     for df in $docker_files
                     do
-                            image_name="${docker_username}/$(basename $(dirname $df)):${project_version}"
-                            echo "image name is $image_name"
-                           docker rmi $image_name
+                           image_name="${docker_username}/$(basename $(dirname $df)):${project_version}"
+                           echo "image name is $image_name"
+                           
+                            if [[ "$(docker images -q $image_name 2> /dev/null)" != "" ]]; then
+                                docker rmi $image_name
+                            fi
 
                            cd $(dirname $df)
-                           docker build . -t $image_name
+                           docker build . --build-arg VERSION=$project_version -t $image_name
                            cd $base_dir
                     done
                 '''

@@ -1,4 +1,6 @@
 FROM openjdk:11
-COPY target/shopping_cart-0.0.1-SNAPSHOT-exec.jar /opt/app/shopping_cart-0.0.1-SNAPSHOT.jar
+ARG VERSION=latest
+COPY target/shopping_cart-${VERSION}-exec.jar /opt/app/shopping_cart-${VERSION}.jar
 EXPOSE 8777
-ENTRYPOINT ["java","-jar","-Dspring.profiles.active=dev","-Xms256m","-Xmx2048m","/opt/app/shopping_cart-0.0.1-SNAPSHOT.jar"]
+ENV version=$VERSION
+ENTRYPOINT java -jar -Xms256m -Xmx2048m /opt/app/shopping_cart-${version}.jar
