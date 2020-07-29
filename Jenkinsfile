@@ -40,6 +40,7 @@ pipeline {
 
                            cd $(dirname $df)
                            docker build . --build-arg VERSION=$project_version -t $image_name
+                           docker push $image_name
                            cd $base_dir
                     done
                 '''
