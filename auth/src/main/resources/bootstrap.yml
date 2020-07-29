@@ -1,0 +1,13 @@
+spring:
+  cloud:
+    config:
+      discovery:
+        serviceId: "configserver"
+      fail-fast: true
+  application:
+    name: auth-service
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka

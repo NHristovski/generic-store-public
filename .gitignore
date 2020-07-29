@@ -1,0 +1,10 @@
+# Project exclude paths
+/base/target/
+/common/target/
+/config_server/target/
+/encryption/target/
+/inventory/target/
+/message/target/
+/payment/target/
+/rating/target/
+/shipping/target/
