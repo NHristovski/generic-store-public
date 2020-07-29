@@ -9,6 +9,12 @@ pipeline {
     agent any
 
     stages {
+        stage('ll test') {
+            steps {
+                sh "ls -lah"
+            }
+        }
+
         stage('Git clone') {
             steps {
                 git 'https://github.com/NHristovski/generic-store.git'
