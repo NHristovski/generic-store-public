@@ -15,15 +15,15 @@ pipeline {
             }
         }
 
-        stage('Git clone') {
-            steps {
-                git 'https://github.com/NHristovski/generic-store.git'
-            }
-        }
-
         stage('Maven build'){
             steps {
                 sh "mvn -T 4 clean install"
+            }
+        }
+
+        stage('ll test') {
+            steps {
+                sh "ls -lah auth/target/"
             }
         }
 
