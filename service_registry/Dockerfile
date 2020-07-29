@@ -7,4 +7,4 @@ RUN mvn -f /usr/src/app/pom.xml clean package
 FROM openjdk:11
 COPY --from=build /usr/src/app/target/service_registry-0.0.1-SNAPSHOT.jar /usr/app/service_registry-0.0.1-SNAPSHOT.jar
 EXPOSE 8761
-ENTRYPOINT ["java","-jar","/usr/app/service_registry-0.0.1-SNAPSHOT.jar"]
+ENTRYPOINT ["java","-jar","-Dspring.profiles.active=dev","-Xms256m","-Xmx2048m","/usr/app/service_registry-0.0.1-SNAPSHOT.jar"]
