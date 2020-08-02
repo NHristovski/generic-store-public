@@ -1,6 +1,7 @@
 package hristovski.nikola.shopping_cart.application.port.rest;
 
 import hristovski.nikola.common.shared.domain.model.product.ProductId;
+import hristovski.nikola.common.shared.domain.model.shopping_cart.ShoppingCart;
 import hristovski.nikola.common.shared.domain.model.shopping_cart.ShoppingCartId;
 import hristovski.nikola.common.shared.domain.model.shopping_cart.ShoppingCartItemId;
 import hristovski.nikola.common.shared.domain.model.user.ApplicationUserId;
@@ -10,7 +11,7 @@ import hristovski.nikola.generic_store.message.domain.rest.shopping_cart.respons
 import hristovski.nikola.generic_store.message.domain.rest.shopping_cart.response.BuyResponse;
 import hristovski.nikola.generic_store.message.domain.rest.shopping_cart.response.ChangeQuantityResponse;
 import hristovski.nikola.generic_store.message.domain.rest.shopping_cart.response.DeleteShoppingCartItemResponse;
-import hristovski.nikola.generic_store.message.domain.rest.shopping_cart.response.GetShoppingCardWithPendingItemsResponse;
+import hristovski.nikola.generic_store.message.domain.rest.shopping_cart.response.GetShoppingCardResponse;
 import hristovski.nikola.generic_store.message.domain.rest.shopping_cart.response.GetShoppingCartHistoryResponse;
 import hristovski.nikola.shopping_cart.application.port.exception.FailedToBuyException;
 import hristovski.nikola.shopping_cart.application.port.exception.InsufficientQuantityException;
@@ -29,7 +30,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
+
+import static hristovski.nikola.common.shared.domain.constants.Headers.USER_ID;
 
 @RestController
 @RequestMapping("/shopping_cart")
@@ -39,19 +43,25 @@ public class ShoppingCartController {
 
     private final ShoppingCartService shoppingCartService;
 
-    @GetMapping("/{applicationUserId}")
-    public ResponseEntity<GetShoppingCardWithPendingItemsResponse> getShoppingCardWithPendingItems(
-//            HttpServletRequest httpRequest) {
-            @PathVariable String applicationUserId) {
+    @GetMapping()
+    public ResponseEntity<GetShoppingCardResponse> getShoppingCardWithPendingItems(
+            HttpServletRequest httpRequest) {
 
-//        //TODO Instead od username use ApplicationUserId
-//        String applicationUserId = httpRequest.getHeader("applicationUserId");
+        log.info("Got get shopping card request");
+
+        String applicationUserId = httpRequest.getHeader(USER_ID);
+
+        ShoppingCart shoppingCart = shoppingCartService.getShoppingCart(
+                new ApplicationUserId(applicationUserId)
+        );
+        log.info("Returning {}", shoppingCart);
+        log.info("Shopping card id {}  without to String {}", shoppingCart.getShoppingCartId().toString()
+        , shoppingCart.getShoppingCartId());
+
         return ResponseEntity.ok(
-                GetShoppingCardWithPendingItemsResponse.builder()
+                GetShoppingCardResponse.builder()
                         .shoppingCart(
-                                shoppingCartService.getShoppingCart(
-                                        new ApplicationUserId(applicationUserId)
-                                )
+                                shoppingCart
                         )
                         .build()
         );
@@ -86,7 +96,8 @@ public class ShoppingCartController {
                 new ProductId(request.getProductId()),
                 new ApplicationUserId(applicationUserId),
                 request.getQuantity(),
-                request.getPrice()
+                request.getPrice(),
+                request.getProductName()
         );
 
         return ResponseEntity.ok(

@@ -1,17 +1,16 @@
 package hristovski.nikola.product.domain.model.product;
 
+import hristovski.nikola.common.shared.domain.model.all.value.Money;
+import hristovski.nikola.common.shared.domain.model.all.value.Quantity;
 import hristovski.nikola.common.shared.domain.model.product.Product;
 import hristovski.nikola.common.shared.domain.model.product.ProductId;
 import hristovski.nikola.common.shared.domain.model.product.value.ImageURL;
 import hristovski.nikola.common.shared.domain.model.product.value.ProductInformation;
 import hristovski.nikola.common.shared.domain.model.product.value.RatingStatistics;
-import hristovski.nikola.common.shared.domain.model.all.value.Money;
 import hristovski.nikola.common.shared.domain.validator.RatingStatisticsValidator;
 import hristovski.nikola.common.shared.domain.validator.Validators;
 import hristovski.nikola.generic_store.base.domain.AbstractEntity;
 import hristovski.nikola.generic_store.base.domain.DomainObjectId;
-import hristovski.nikola.product.domain.event.ProductRatingStatisticsChangedEvent;
-import hristovski.nikola.product.domain.event.provider.DomainEventPublisherProvider;
 import hristovski.nikola.product.domain.model.category.CategoryEntity;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -129,9 +128,11 @@ public class ProductEntity extends AbstractEntity<ProductId> {
                 this.getInformation(),
                 this.getCreatedOn(),
                 this.getPrice(),
+                new Quantity(0L),
                 this.getRatingStatistics(),
                 this.getCategories().stream()
                         .map(CategoryEntity::toCategory)
+                        .filter(Objects::nonNull)
                         .collect(Collectors.toSet())
         );
     }
@@ -145,10 +146,28 @@ public class ProductEntity extends AbstractEntity<ProductId> {
 
         this.setRatingStatistics(newRatingStatistics);
 
-        DomainEventPublisherProvider.getInstance()
-                .publish(
-                        new ProductRatingStatisticsChangedEvent(this.getId(), newRatingStatistics)
-                );
+//        DomainEventPublisherProvider.getInstance()
+//                .publish(
+//                        new ProductRatingStatisticsChangedEvent(this.getId(), newRatingStatistics)
+//                );
+    }
+
+    public void adjustRatingStatistics(Integer oldRating, Integer newRating) {
+        Objects.requireNonNull(oldRating, "Rating must not be null!");
+        Objects.requireNonNull(newRating, "Rating must not be null!");
+        Validators.requireInRange(oldRating, MIN_RATING, MAX_RATING);
+        Validators.requireInRange(newRating, MIN_RATING, MAX_RATING);
+
+        RatingStatistics newRatingStatistics =
+                this.getRatingStatistics()
+                        .removeRating(oldRating)
+                        .addRating(newRating);
+
+        System.out.println("After removing old rating " + oldRating +
+                "and adding new rating " + newRating + "the newRatingStatistics " +
+                "are average: " + ratingStatistics.getAverageRating() + " and total: "
+                + ratingStatistics.getTotalRatings());
+        this.setRatingStatistics(newRatingStatistics);
     }
 
     public void setVersion(Long version) {
@@ -184,5 +203,9 @@ public class ProductEntity extends AbstractEntity<ProductId> {
 
     public void setCategories(Set<CategoryEntity> categories) {
         this.categories = categories;
+    }
+
+    public void refresh() {
+        this.createdOn = Instant.now();
     }
 }

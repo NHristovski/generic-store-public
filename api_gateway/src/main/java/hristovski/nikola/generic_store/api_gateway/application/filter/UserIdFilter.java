@@ -2,6 +2,7 @@ package hristovski.nikola.generic_store.api_gateway.application.filter;
 
 import com.netflix.zuul.ZuulFilter;
 import com.netflix.zuul.context.RequestContext;
+import hristovski.nikola.common.shared.domain.constants.Headers;
 import hristovski.nikola.generic_store.api_gateway.application.configuration.JwtConfig;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -15,7 +16,7 @@ import javax.servlet.http.HttpServletRequest;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class UsernameFilter extends ZuulFilter {
+public class UserIdFilter extends ZuulFilter {
 
     @Autowired
     private JwtConfig jwtConfig;
@@ -54,11 +55,11 @@ public class UsernameFilter extends ZuulFilter {
                 .parseClaimsJws(token)
                 .getBody();
 
-        String username = claims.getSubject();
+        String userId = (String) claims.get(Headers.USER_ID);
 
-        ctx.addZuulRequestHeader("username", username);
+        ctx.addZuulRequestHeader(Headers.USER_ID, userId);
 
-        log.info("Added the username {} as header", username);
+        log.info("Added the userId {} as header", userId);
 
         return null;
     }

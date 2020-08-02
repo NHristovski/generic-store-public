@@ -69,10 +69,10 @@ public class Money implements ValueObject {
         return Objects.hash(currency, amount);
     }
 
-    @Override
-    public String toString() {
-        return String.format("%s %d", currency, amount);
-    }
+//    @Override
+//    public String toString() {
+//        return String.format("%s %d", currency, amount);
+//    }
 
 
 }

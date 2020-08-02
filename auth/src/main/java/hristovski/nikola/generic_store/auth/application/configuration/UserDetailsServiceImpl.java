@@ -8,6 +8,7 @@ import hristovski.nikola.encryption.application.service.EncryptionService;
 import hristovski.nikola.generic_store.message.domain.rest.user.response.GetApplicationUserResponse;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -24,7 +25,8 @@ import org.springframework.web.client.RestTemplate;
 @AllArgsConstructor
 public class UserDetailsServiceImpl implements UserDetailsService {
 
-    private static final String SERVICE = "users-service";
+    private final ServicesConfig servicesConfig;
+
     private final EurekaClient discoveryClient;
     private final RestTemplate restTemplate;
     private final EncryptionService encryptionService;
@@ -33,7 +35,11 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
 
         try {
-            InstanceInfo userServiceInfo = discoveryClient.getNextServerFromEureka(SERVICE, false);
+
+            log.info("Searching for service {}", servicesConfig.getUserService());
+
+            InstanceInfo userServiceInfo = discoveryClient
+                    .getNextServerFromEureka(servicesConfig.getUserService(), false);
             log.info("The server url is: {}", userServiceInfo.getHomePageUrl());
 
             String url = userServiceInfo.getHomePageUrl() + username;

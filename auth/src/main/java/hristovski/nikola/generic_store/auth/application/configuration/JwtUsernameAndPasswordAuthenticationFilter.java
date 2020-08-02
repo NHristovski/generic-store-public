@@ -1,6 +1,10 @@
 package hristovski.nikola.generic_store.auth.application.configuration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.netflix.appinfo.InstanceInfo;
+import com.netflix.discovery.EurekaClient;
+import hristovski.nikola.common.shared.domain.constants.Headers;
+import hristovski.nikola.generic_store.message.domain.rest.user.response.GetApplicationUserResponse;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import lombok.Getter;
@@ -14,6 +18,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.web.client.RestTemplate;
 
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
@@ -34,12 +39,21 @@ import java.util.stream.Collectors;
 public class JwtUsernameAndPasswordAuthenticationFilter extends UsernamePasswordAuthenticationFilter {
 
     private final AuthenticationManager authManager;
+    private final EurekaClient discoveryClient;
+    private final RestTemplate restTemplate;
+
     private final JwtConfig jwtConfig;
+    private final ServicesConfig servicesConfig;
 
-    public JwtUsernameAndPasswordAuthenticationFilter(AuthenticationManager authManager, JwtConfig jwtConfig) {
+    public JwtUsernameAndPasswordAuthenticationFilter(AuthenticationManager authManager, EurekaClient discoveryClient,
+                                                      RestTemplate restTemplate, JwtConfig jwtConfig,
+                                                      ServicesConfig servicesConfig) {
         this.authManager = authManager;
-        this.jwtConfig = jwtConfig;
+        this.discoveryClient = discoveryClient;
+        this.restTemplate = restTemplate;
 
+        this.jwtConfig = jwtConfig;
+        this.servicesConfig = servicesConfig;
         // By default, UsernamePasswordAuthenticationFilter listens to "/login" path.
         // This will override it to listen to the configured url ( default "/auth" ).
         this.setRequiresAuthenticationRequestMatcher(new AntPathRequestMatcher(jwtConfig.getUri(), "POST"));
@@ -73,15 +87,20 @@ public class JwtUsernameAndPasswordAuthenticationFilter extends UsernamePassword
     protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain,
                                             Authentication auth) throws IOException, ServletException {
 
-        Long now = System.currentTimeMillis();
+        long now = System.currentTimeMillis();
 
         List<String> authorities = auth.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority).collect(Collectors.toList());
+
+
+        GetApplicationUserResponse applicationUserResponse = getApplicationUserResponse(auth);
+        String userId = applicationUserResponse.getUser().getApplicationUserId().getId();
 
         // Create the token
         String token = Jwts.builder()
                 .setSubject(auth.getName())
                 .claim("authorities", authorities)
+                .claim(Headers.USER_ID, userId)
                 .setIssuedAt(new Date(now))
                 .setExpiration(new Date(now + jwtConfig.getExpiration() * 1000))  // in milliseconds
                 .signWith(SignatureAlgorithm.HS512, jwtConfig.getSecret().getBytes())
@@ -91,8 +110,23 @@ public class JwtUsernameAndPasswordAuthenticationFilter extends UsernamePassword
         response.addHeader(jwtConfig.getHeader(), jwtConfig.getPrefix() + token);
 
         response.addHeader("roles", authorities.toString());
+        response.addHeader("id", userId);
 
-        log.info("Auth successful. Token generation successful");
+        log.info("Auth for user {} successful. Token generation successful", userId);
+    }
+
+    private GetApplicationUserResponse getApplicationUserResponse(Authentication auth) {
+        InstanceInfo userServiceInfo = discoveryClient
+                .getNextServerFromEureka(servicesConfig.getUserService(), false);
+
+        String url = userServiceInfo.getHomePageUrl() + auth.getName();
+
+        GetApplicationUserResponse applicationUserResponse =
+                restTemplate.getForObject(url, GetApplicationUserResponse.class);
+
+        assert applicationUserResponse != null;
+
+        return applicationUserResponse;
     }
 
     @Getter

@@ -13,6 +13,6 @@ public class ProductInformation implements ValueObject {
     private String title;
     @Column(name = "product_short_desc", nullable = false)
     private String shortDescription;
-    @Column(name = "product_long_desc", nullable = false)
+    @Column(name = "product_long_desc", nullable = false, length = 4000)
     private String longDescription;
 }

@@ -1,5 +1,6 @@
 package hristovski.nikola.shopping_cart.domain.service;
 
+import hristovski.nikola.common.shared.domain.model.all.value.Name;
 import hristovski.nikola.common.shared.domain.model.product.ProductId;
 import hristovski.nikola.common.shared.domain.model.shopping_cart.ShoppingCart;
 import hristovski.nikola.common.shared.domain.model.shopping_cart.ShoppingCartId;
@@ -32,7 +33,8 @@ public interface ShoppingCartService {
     void addProductToShoppingCart(ProductId productId,
                                   ApplicationUserId userId,
                                   Quantity quantity,
-                                  Money price) throws InsufficientQuantityException;
+                                  Money price,
+                                  Name productName) throws InsufficientQuantityException;
 
     Money getShoppingCartPrice(ShoppingCartId shoppingCartId);
 

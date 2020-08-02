@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.stereotype.Service;
 
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -27,18 +28,10 @@ public class PersonalizedProductConverter implements Converter<ProductEntity, Pe
                 productEntity.getRatingStatistics(),
                 productEntity.getCategories()
                         .stream()
-                        .map(this::mapCategoryEntityToCategory)
+                        .map(CategoryEntity::toCategory)
+                        .filter(Objects::nonNull)
                         .collect(Collectors.toSet()),
                 null
         );
     }
-
-    public Category mapCategoryEntityToCategory(CategoryEntity categoryEntity) {
-        return new Category(
-                categoryEntity.id(),
-                categoryEntity.getVersion(),
-                categoryEntity.getCategoryName()
-        );
-    }
-
 }

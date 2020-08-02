@@ -20,7 +20,6 @@ public class ShoppingCartConverter implements Converter<ShoppingCartEntity, Shop
         return new ShoppingCart(
                 shoppingCartEntity.getVersion(),
                 shoppingCartEntity.getId(),
-                shoppingCartEntity.getUserId(),
                 mapShoppingCartItemEntitiesToShoppingCartItems(
                         shoppingCartEntity.getShoppingCartItemEntities()
                 )
@@ -30,10 +29,12 @@ public class ShoppingCartConverter implements Converter<ShoppingCartEntity, Shop
     private Set<ShoppingCartItem> mapShoppingCartItemEntitiesToShoppingCartItems(Set<ShoppingCartItemEntity> entities) {
         return entities.stream()
                 .map(shoppingCartItemEntity -> new ShoppingCartItem(
+                        shoppingCartItemEntity.getId(),
                         shoppingCartItemEntity.getVersion(),
                         shoppingCartItemEntity.getProductId(),
                         shoppingCartItemEntity.getPrice(),
-                        shoppingCartItemEntity.getQuantity()
+                        shoppingCartItemEntity.getQuantity(),
+                        shoppingCartItemEntity.getProductName()
                 ))
                 .collect(Collectors.toSet());
     }

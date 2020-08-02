@@ -1,20 +1,25 @@
 package hristovski.nikola.product.domain.service;
 
 import hristovski.nikola.common.shared.domain.exception.RestRequestException;
+import hristovski.nikola.common.shared.domain.model.all.value.Money;
+import hristovski.nikola.common.shared.domain.model.all.value.Quantity;
 import hristovski.nikola.common.shared.domain.model.category.Category;
 import hristovski.nikola.common.shared.domain.model.category.CategoryId;
+import hristovski.nikola.common.shared.domain.model.inventory.StockResponseElement;
 import hristovski.nikola.common.shared.domain.model.product.PersonalizedProduct;
 import hristovski.nikola.common.shared.domain.model.product.Product;
 import hristovski.nikola.common.shared.domain.model.product.ProductId;
 import hristovski.nikola.common.shared.domain.model.product.value.ImageURL;
 import hristovski.nikola.common.shared.domain.model.product.value.ProductInformation;
-import hristovski.nikola.common.shared.domain.model.all.value.Money;
-import hristovski.nikola.common.shared.domain.model.all.value.Quantity;
+import hristovski.nikola.common.shared.domain.model.rating.RatingResponseElement;
 import hristovski.nikola.common.shared.domain.model.user.ApplicationUserId;
+import hristovski.nikola.generic_store.base.domain.DomainEventPublisher;
+import hristovski.nikola.generic_store.message.domain.event.ProductCreatedEvent;
 import hristovski.nikola.product.domain.exception.CategoryNotFoundException;
 import hristovski.nikola.product.domain.exception.ProductNotFoundException;
 import hristovski.nikola.product.domain.model.category.CategoryEntity;
 import hristovski.nikola.product.domain.model.product.ProductEntity;
+import hristovski.nikola.product.domain.remote.service.InventoryService;
 import hristovski.nikola.product.domain.remote.service.RatingService;
 import hristovski.nikola.product.domain.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +29,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -35,14 +41,22 @@ public class ProductServiceImpl implements ProductService {
 
     private final ProductRepository productRepository;
     private final RatingService ratingService;
+    private final InventoryService inventoryService;
+
     private final ConversionService conversionService;
     private final CategoryService categoryService;
+    private final DomainEventPublisher domainEventPublisher;
 
     @Override
-    public PersonalizedProduct getById(ProductId productId, ApplicationUserId userId) throws ProductNotFoundException {
+    public PersonalizedProduct getById(ProductId productId, ApplicationUserId userId)
+            throws ProductNotFoundException, RestRequestException {
         ProductEntity productEntity = getProductEntity(productId);
 
-        return personalizeProduct(productEntity, userId);
+        Map<ProductId, RatingResponseElement> productRatings = ratingService.findRatings(
+                List.of(productEntity.getId()),
+                userId
+        );
+        return personalizeProduct(productEntity, productRatings);
     }
 
     private ProductEntity getProductEntity(ProductId productId) throws ProductNotFoundException {
@@ -50,25 +64,38 @@ public class ProductServiceImpl implements ProductService {
                 .orElseThrow(() -> new ProductNotFoundException(productId.getId()));
     }
 
-    private PersonalizedProduct personalizeProduct(ProductEntity productEntity, ApplicationUserId userId) {
+    private PersonalizedProduct personalizeProduct(ProductEntity productEntity,
+                                                   Map<ProductId, RatingResponseElement> productRatings) {
         PersonalizedProduct personalizedProduct
                 = conversionService.convert(productEntity, PersonalizedProduct.class);
 
         Objects.requireNonNull(personalizedProduct, "PersonalizedProduct must not be null!");
 
-        Integer rating = 0;
-        try {
-            rating = ratingService.getCurrentRating(productEntity.getId(), userId);
-        } catch (RestRequestException exception) {
-            log.error(
-                    "Failed to obtain the current rating for product {} from user {}"
-                    , productEntity.getId().getId(), userId.getId(), exception
-            );
+        log.info("Getting rating response element for product {} from map {}", personalizedProduct.getProductId()
+                , productRatings);
+        RatingResponseElement ratingResponseElement = productRatings.get(personalizedProduct.getProductId());
+        log.info("The response element is {}", ratingResponseElement);
+
+        if (ratingResponseElement.hasError()) {
+            personalizedProduct.setCurrentUserRating(0);
+        } else {
+            personalizedProduct.setCurrentUserRating(ratingResponseElement.getRating());
         }
 
-        personalizedProduct.setCurrentUserRating(rating);
-
         return personalizedProduct;
+////        Integer rating = 0;
+////        try {
+////            rating = ratingService.getCurrentRating(productEntity.getId(), userId);
+////        } catch (RestRequestException exception) {
+////            log.error(
+////                    "Failed to obtain the current rating for product {} from user {}"
+////                    , productEntity.getId().getId(), userId.getId(), exception
+////            );
+////        }
+//
+//        personalizedProduct.setCurrentUserRating(rating);
+//
+//        return personalizedProduct;
     }
 
     @Override
@@ -78,36 +105,112 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public List<PersonalizedProduct> getProducts(int page, int size, ApplicationUserId userId) {
-        return productRepository.findAllByDeletedFalseOrderByCreatedOnDesc(PageRequest.of(page, size))
-                .getContent().stream()
-                .map(product -> personalizeProduct(product, userId))
+    public List<PersonalizedProduct> getProducts(int page, int size, ApplicationUserId userId)
+            throws RestRequestException {
+
+        List<ProductEntity> products = productRepository.
+                findAllByDeletedFalseOrderByCreatedOnDesc(PageRequest.of(page, size))
+                .getContent();
+
+        List<ProductId> productIds = products.stream()
+                .map(ProductEntity::getId)
+                .collect(Collectors.toList());
+
+        Map<ProductId, StockResponseElement> productStocks = inventoryService.getProductStocks(
+                productIds
+        );
+
+        Map<ProductId, RatingResponseElement> productRatings = ratingService.findRatings(
+                productIds,
+                userId
+        );
+
+        return products.stream()
+                .map(product -> personalizeProduct(product, productRatings))
+                .map(product -> adjustStock(product, productStocks))
                 .collect(Collectors.toList());
     }
 
+    private PersonalizedProduct adjustStock(PersonalizedProduct product, Map<ProductId, StockResponseElement> productStocks) {
+        StockResponseElement stockResponseElement = productStocks.get(product.getProductId());
+
+        if (stockResponseElement.hasError()) {
+            product.setStock(new Quantity(0L));
+        } else {
+            product.setStock(stockResponseElement.getQuantity());
+        }
+
+        return product;
+    }
+
+    private Product adjustStock(ProductEntity product, Map<ProductId, StockResponseElement> productStocks) {
+        StockResponseElement stockResponseElement = productStocks.get(product.getId());
+
+        if (stockResponseElement.hasError()) {
+            return product.toProduct();
+        }
+
+        Product newProduct = product.toProduct();
+        newProduct.setStock(stockResponseElement.getQuantity());
+        return newProduct;
+    }
+
     @Override
-    public List<PersonalizedProduct> getProductsSortedByRating(int page, int size, ApplicationUserId userId) {
-        return productRepository
+    public List<PersonalizedProduct> getProductsSortedByRating(int page, int size, ApplicationUserId userId)
+            throws RestRequestException {
+        List<ProductEntity> products = productRepository
                 .findAllByDeletedFalseOrderByRatingStatisticsAverageRatingDesc(PageRequest.of(page, size))
-                .getContent().stream()
-                .map(product -> personalizeProduct(product, userId))
+                .getContent();
+
+        List<ProductId> productIds = products.stream()
+                .map(ProductEntity::getId)
+                .collect(Collectors.toList());
+
+        Map<ProductId, StockResponseElement> productStocks = inventoryService.getProductStocks(
+                productIds
+        );
+
+        Map<ProductId, RatingResponseElement> productRatings = ratingService.findRatings(
+                productIds,
+                userId
+        );
+
+        return products.stream()
+                .map(product -> personalizeProduct(product, productRatings))
+                .map(product -> adjustStock(product, productStocks))
                 .collect(Collectors.toList());
     }
 
     @Override
     public List<PersonalizedProduct> getProductsInCategory(int page, int size,
                                                            CategoryId categoryId, ApplicationUserId userId)
-            throws CategoryNotFoundException {
+            throws CategoryNotFoundException, RestRequestException {
 
         CategoryEntity categoryEntity = categoryService.getById(categoryId);
 
-        return productRepository
-                .queryProductsByDeletedFalseAndCategoriesIsContainingOrderByCreatedOnDesc(categoryEntity, PageRequest.of(page, size))
-                .getContent()
-                .stream()
-                .map(product -> personalizeProduct(product, userId))
+        List<ProductEntity> products = productRepository
+                .queryProductsByDeletedFalseAndCategoriesIsContainingOrderByCreatedOnDesc(
+                        categoryEntity, PageRequest.of(page, size)
+                )
+                .getContent();
+
+        List<ProductId> productIds = products.stream()
+                .map(ProductEntity::getId)
                 .collect(Collectors.toList());
 
+        Map<ProductId, StockResponseElement> productStocks = inventoryService.getProductStocks(
+                productIds
+        );
+
+        Map<ProductId, RatingResponseElement> productRatings = ratingService.findRatings(
+                productIds,
+                userId
+        );
+
+        return products.stream()
+                .map(product -> personalizeProduct(product, productRatings))
+                .map(product -> adjustStock(product, productStocks))
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -116,25 +219,45 @@ public class ProductServiceImpl implements ProductService {
         ProductEntity productEntity = getProductEntity(productId);
 
         productEntity.adjustRatingStatistics(rating);
-//        RatingStatistics newRatingStatistics = productEntity.getRatingStatistics().addRating(rating);
-//        productEntity.setRatingStatistics(newRatingStatistics);
+
+        productRepository.save(productEntity);
+    }
+
+    @Override
+    public void adjustProductRatingStatistics(ProductId productId, Integer oldRating, Integer newRating)
+            throws ProductNotFoundException {
+        ProductEntity productEntity = getProductEntity(productId);
+
+        productEntity.adjustRatingStatistics(oldRating, newRating);
 
         productRepository.save(productEntity);
     }
 
     @Override
     public ProductEntity addProduct(ImageURL imageLocation, ProductInformation information, Money price,
-                                    Quantity stock, Set<Category> categories) {
+                                    Set<Category> categories, Quantity stock) {
         ProductEntity productEntity = new ProductEntity(imageLocation, information, price);
-        // TODO WHAT TO DO WHIT THE STOCK? SEND EVENT
 
-        return setCategoriesAndSaveProduct(categories, productEntity);
+        ProductEntity savedProductEntity = setCategoriesAndSaveProduct(categories, productEntity);
+
+        domainEventPublisher.publish(
+                new ProductCreatedEvent(savedProductEntity.getId(), stock)
+        );
+
+        return savedProductEntity;
     }
 
 
     @Override
     public ProductEntity editProduct(Product product) throws ProductNotFoundException {
-        ProductEntity productEntity = new ProductEntity(product);
+        ProductEntity productEntity = productRepository.findByDeletedFalseAndIdEquals(product.getProductId())
+                .orElseThrow(() -> new ProductNotFoundException(product.getProductId().getId()));
+
+        productEntity.setVersion(product.getVersion());
+        productEntity.setPrice(product.getPrice());
+        productEntity.setInformation(product.getInformation());
+        productEntity.setImageLocation(product.getImageLocation());
+//        ProductEntity productEntity = new ProductEntity(product);
 
         return setCategoriesAndSaveProduct(product.getCategories(), productEntity);
     }
@@ -153,6 +276,7 @@ public class ProductServiceImpl implements ProductService {
                         .collect(Collectors.toSet())
         );
 
+
         return productRepository.save(productEntity);
     }
 
@@ -166,12 +290,22 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public List<Product> search(String query) {
-        return productRepository
-                .findAllByDeletedFalseAndIdEqualsOrInformationTitleContainsOrderByCreatedOnDesc(
+    public List<Product> search(String query) throws RestRequestException {
+        List<ProductEntity> products = productRepository
+                .findAllByDeletedFalseAndIdEqualsOrDeletedFalseAndInformationTitleContainsIgnoreCaseOrderByCreatedOnDesc(
                         new ProductId(query), query
-                ).stream()
-                .map(ProductEntity::toProduct)
+                );
+
+        List<ProductId> productIds = products.stream()
+                .map(ProductEntity::getId)
+                .collect(Collectors.toList());
+
+        Map<ProductId, StockResponseElement> productStocks = inventoryService.getProductStocks(
+                productIds
+        );
+
+        return products.stream()
+                .map(p -> adjustStock(p, productStocks))
                 .collect(Collectors.toList());
     }
 
@@ -194,6 +328,14 @@ public class ProductServiceImpl implements ProductService {
         double ceil = Math.ceil((count / (size * 1.0)));
 
         return (int) ceil;
+    }
+
+    @Override
+    public ProductEntity refreshProduct(ProductId productId) throws ProductNotFoundException {
+        ProductEntity productEntity = getProductEntity(productId);
+
+        productEntity.refresh();
+        return productRepository.save(productEntity);
     }
 
 //    @Override

@@ -12,10 +12,12 @@ public class ShoppingCartItemConverter implements Converter<ShoppingCartItemEnti
     @Override
     public ShoppingCartItem convert(ShoppingCartItemEntity shoppingCartItemEntity) {
         return new ShoppingCartItem(
+                shoppingCartItemEntity.getId(),
                 shoppingCartItemEntity.getVersion(),
                 shoppingCartItemEntity.getProductId(),
                 shoppingCartItemEntity.getPrice(),
-                shoppingCartItemEntity.getQuantity()
+                shoppingCartItemEntity.getQuantity(),
+                shoppingCartItemEntity.getProductName()
         );
     }
 }

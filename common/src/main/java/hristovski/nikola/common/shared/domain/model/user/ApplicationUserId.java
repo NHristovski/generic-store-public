@@ -9,7 +9,6 @@ import javax.persistence.Embeddable;
 
 @Getter
 @EqualsAndHashCode(callSuper = true)
-@ToString
 @Embeddable
 public class ApplicationUserId extends DomainObjectId {
     public ApplicationUserId() {

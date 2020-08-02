@@ -25,8 +25,9 @@ public interface ProductRepository extends PagingAndSortingRepository<ProductEnt
     //Iterable<ProductEntity> findAllByDeletedFalseOrderByRatingStatisticsAverageRatingAsc();
 
     Page<ProductEntity> findAllByDeletedFalseOrderByCreatedOnDesc(Pageable pageable);
+
     // TODO CHECK THIS
-    List<ProductEntity> findAllByDeletedFalseAndIdEqualsOrInformationTitleContainsOrderByCreatedOnDesc
+    List<ProductEntity> findAllByDeletedFalseAndIdEqualsOrDeletedFalseAndInformationTitleContainsIgnoreCaseOrderByCreatedOnDesc
     (ProductId id, String informationTitle);
 
     long countProductsByDeletedFalseAndCategoriesIsContaining(CategoryEntity categoryEntity);

@@ -11,7 +11,6 @@ import hristovski.nikola.product.domain.service.CategoryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.convert.ConversionService;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -70,7 +69,7 @@ public class CategoryController {
             throws CategoryNotFoundException {
 
         categoryService.deleteCategory(new CategoryId(categoryId));
-        return ResponseEntity.status(HttpStatus.OK).build();
+        return ResponseEntity.ok(DeletionSuccessfulResponse.builder().build());
     }
 //    @GetMapping("{category}")
 //    public ResponseEntity<CategoryEntity> getCategory(@PathVariable String category) throws CategoryNotFoundException {

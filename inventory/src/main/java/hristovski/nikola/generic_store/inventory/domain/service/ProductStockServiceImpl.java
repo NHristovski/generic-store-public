@@ -1,6 +1,7 @@
 package hristovski.nikola.generic_store.inventory.domain.service;
 
 import hristovski.nikola.common.shared.domain.factory.inventory.StockResponseElementFactory;
+import hristovski.nikola.common.shared.domain.model.all.value.Quantity;
 import hristovski.nikola.common.shared.domain.model.inventory.StockResponseElement;
 import hristovski.nikola.common.shared.domain.model.product.ProductId;
 import hristovski.nikola.generic_store.inventory.domain.persistance.entity.ProductStockEntity;
@@ -42,5 +43,44 @@ public class ProductStockServiceImpl implements ProductStockService {
         }
 
         return result;
+    }
+
+    @Override
+    public ProductStockEntity createProductStock(ProductId productId, Quantity quantity) {
+        return productStockRepository.saveAndFlush(
+                new ProductStockEntity(
+                        productId, quantity
+                )
+        );
+    }
+
+    @Override
+    public void restock(ProductId id, Quantity stock) {
+        ProductStockEntity productStockEntity =
+                productStockRepository.findByProductId(id).orElseThrow(RuntimeException::new);
+
+        productStockEntity.restock(stock);
+
+        productStockRepository.saveAndFlush(productStockEntity);
+    }
+
+    @Override
+    public ProductStockEntity findByProductId(ProductId productId) {
+        return productStockRepository.findByProductId(productId).orElseThrow(RuntimeException::new);
+    }
+
+    @Override
+    public boolean updateStock(ProductId productId, Long quantity) {
+        ProductStockEntity productStockEntity = productStockRepository.findByProductId(productId).orElseThrow(RuntimeException::new);
+
+        if (productStockEntity.getStock().getQuantity() < quantity){
+            return false;
+        }
+
+        productStockEntity.reserve(quantity);
+
+        productStockRepository.saveAndFlush(productStockEntity);
+
+        return true;
     }
 }

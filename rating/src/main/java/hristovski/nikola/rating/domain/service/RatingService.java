@@ -1,16 +1,23 @@
 package hristovski.nikola.rating.domain.service;
 
 import hristovski.nikola.common.shared.domain.model.product.ProductId;
+import hristovski.nikola.common.shared.domain.model.rating.RatingResponseElement;
 import hristovski.nikola.common.shared.domain.model.user.ApplicationUserId;
+import hristovski.nikola.generic_store.message.domain.rest.rating.request.RatingRequest;
 import hristovski.nikola.rating.domain.model.RatingEntity;
+
+import java.util.List;
+import java.util.Map;
 
 public interface RatingService {
 
-    RatingEntity getCurrentRating(ProductId productId, ApplicationUserId userId);
+    Integer getCurrentRating(ProductId productId, ApplicationUserId userId);
 
     Double getAverageRating(ProductId productId);
 
     Long getTotalRating(ProductId productId);
 
     RatingEntity rate(ProductId productId, ApplicationUserId userId, Integer rating);
+
+    Map<ProductId, RatingResponseElement> findRatings(List<ProductId> products, ApplicationUserId applicationUserId);
 }

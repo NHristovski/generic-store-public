@@ -16,7 +16,7 @@ pipeline {
             }
         }
 
-        stage('ll test again') {
+        stage('Build docker images and push to dockerhub') {
             steps {
                 sh '''
                     docker_username=nikolahristovski

@@ -11,12 +11,7 @@ import java.util.Set;
 @AllArgsConstructor
 @NoArgsConstructor
 public class ShoppingCart {
-
     private Long version;
     private ShoppingCartId shoppingCartId;
-
-    //TODO Change username to userId in every project ( API GATEWAY )
-    private ApplicationUserId userId;
-
     private Set<ShoppingCartItem> shoppingCartItems;
 }

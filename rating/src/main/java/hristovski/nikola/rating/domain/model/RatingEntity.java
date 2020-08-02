@@ -3,6 +3,7 @@ package hristovski.nikola.rating.domain.model;
 import hristovski.nikola.common.shared.domain.model.product.ProductId;
 import hristovski.nikola.common.shared.domain.model.rating.RatingId;
 import hristovski.nikola.common.shared.domain.model.user.ApplicationUserId;
+import hristovski.nikola.common.shared.domain.validator.Validators;
 import hristovski.nikola.generic_store.base.domain.AbstractEntity;
 import hristovski.nikola.generic_store.base.domain.DomainObjectId;
 import lombok.AllArgsConstructor;
@@ -42,5 +43,11 @@ public class RatingEntity extends AbstractEntity<RatingId> {
         this.productId = productId;
         this.applicationUserId = userId;
         this.rating = rating;
+    }
+
+    public void changeRating(Integer newRating){
+        Validators.requireInRange(newRating, 1, 10);
+
+        this.rating = newRating;
     }
 }

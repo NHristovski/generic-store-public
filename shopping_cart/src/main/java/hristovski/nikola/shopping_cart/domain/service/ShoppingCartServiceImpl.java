@@ -1,20 +1,21 @@
 package hristovski.nikola.shopping_cart.domain.service;
 
+import hristovski.nikola.common.shared.domain.model.all.value.Money;
+import hristovski.nikola.common.shared.domain.model.all.value.Name;
+import hristovski.nikola.common.shared.domain.model.all.value.Quantity;
 import hristovski.nikola.common.shared.domain.model.product.ProductId;
 import hristovski.nikola.common.shared.domain.model.shopping_cart.ShoppingCart;
 import hristovski.nikola.common.shared.domain.model.shopping_cart.ShoppingCartId;
 import hristovski.nikola.common.shared.domain.model.shopping_cart.ShoppingCartItem;
 import hristovski.nikola.common.shared.domain.model.shopping_cart.ShoppingCartItemId;
-import hristovski.nikola.common.shared.domain.model.all.value.Money;
-import hristovski.nikola.common.shared.domain.model.all.value.Quantity;
 import hristovski.nikola.common.shared.domain.model.user.ApplicationUserId;
 import hristovski.nikola.generic_store.message.domain.rest.shopping_cart.request.BuyRequest;
-import hristovski.nikola.shopping_cart.domain.model.ShoppingCartEntity;
-import hristovski.nikola.shopping_cart.domain.model.ShoppingCartItemEntity;
 import hristovski.nikola.shopping_cart.application.port.exception.FailedToBuyException;
 import hristovski.nikola.shopping_cart.application.port.exception.InsufficientQuantityException;
 import hristovski.nikola.shopping_cart.application.port.exception.MaxQuantityReachedException;
 import hristovski.nikola.shopping_cart.application.port.exception.MinQuantityReachedException;
+import hristovski.nikola.shopping_cart.domain.model.ShoppingCartEntity;
+import hristovski.nikola.shopping_cart.domain.model.ShoppingCartItemEntity;
 import hristovski.nikola.shopping_cart.domain.repository.ShoppingCartRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +23,6 @@ import org.springframework.core.convert.ConversionService;
 import org.springframework.stereotype.Service;
 
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -60,8 +60,7 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
     private ShoppingCart createNewShoppingCart(ApplicationUserId userId) {
         log.info("Creating new shopping cart for user {}", userId.getId());
 
-        ShoppingCartEntity shoppingCartEntity = new ShoppingCartEntity();
-        shoppingCartEntity.setUserId(userId);
+        ShoppingCartEntity shoppingCartEntity = new ShoppingCartEntity(userId);
 
         ShoppingCartEntity savedShoppingCartEntity = shoppingCartRepository.save(shoppingCartEntity);
         log.info("Successfully created shopping cart for user {}", userId.getId());
@@ -90,23 +89,22 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
     }
 
     @Override
-    public void addProductToShoppingCart(ProductId productId, ApplicationUserId userId, Quantity quantity, Money price)
-            throws InsufficientQuantityException {
-
-        // CHECK FOR QUANTITY and throw exception if anything is wrong
+    public void addProductToShoppingCart(ProductId productId, ApplicationUserId userId,
+                                         Quantity quantity, Money price, Name productName) {
 
         ShoppingCartEntity cart = shoppingCartRepository.findByApplicationUserId(userId);
 
-        ShoppingCartItemEntity cartItem = new ShoppingCartItemEntity(
-                0L,
-                productId,
-                price,
-                quantity
-        );
+        if (cart == null) {
+            log.info("The card for user {} is null creating new card", userId.getId());
+            cart = shoppingCartRepository.saveAndFlush(new ShoppingCartEntity(userId));
+        }
+
+        ShoppingCartItemEntity cartItem = new ShoppingCartItemEntity(productId, price, quantity, productName);
 
         cart.addShoppingCartItem(cartItem);
+        log.info("Added shopping cart item");
 
-        // TODO FIRE EVENT TO REDUCE PRODUCT QUANTITY
+        shoppingCartRepository.saveAndFlush(cart);
     }
 
     @Override
@@ -189,10 +187,10 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
 
     private ShoppingCartEntity findShoppingCartEntity(ShoppingCartId shoppingCartId) {
         return shoppingCartRepository.findById(shoppingCartId)
-                    .orElseThrow(() -> new RuntimeException(
-                                    "Failed to find shopping cart with id " + shoppingCartId.getId()
-                            )
-                    );
+                .orElseThrow(() -> new RuntimeException(
+                                "Failed to find shopping cart with id " + shoppingCartId.getId()
+                        )
+                );
     }
 
     @Override
@@ -203,7 +201,7 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
         ShoppingCartItemEntity shoppingCartItemEntity =
                 findShoppingCartItemEntity(shoppingCartId, shoppingCartItemId);
 
-        if (shoppingCartItemEntity.getQuantity().getQuantity().equals(1L)){
+        if (shoppingCartItemEntity.getQuantity().getQuantity().equals(1L)) {
             throw new MinQuantityReachedException("The shopping cart item has only 1 product");
         }
 

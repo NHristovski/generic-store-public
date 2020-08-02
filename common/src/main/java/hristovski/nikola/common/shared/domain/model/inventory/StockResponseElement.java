@@ -6,12 +6,18 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@ToString
 public class StockResponseElement {
     private Error error;
     private Quantity quantity;
+
+    public boolean hasError() {
+        return this.error.isHasError();
+    }
 }

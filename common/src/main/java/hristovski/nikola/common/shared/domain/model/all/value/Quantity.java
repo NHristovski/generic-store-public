@@ -1,7 +1,9 @@
 package hristovski.nikola.common.shared.domain.model.all.value;
 
+import hristovski.nikola.common.shared.domain.validator.Validators;
 import hristovski.nikola.generic_store.base.domain.ValueObject;
 import lombok.Getter;
+import lombok.ToString;
 
 import javax.persistence.Column;
 import javax.persistence.Embeddable;
@@ -11,6 +13,7 @@ import java.util.Objects;
 @Getter
 @Embeddable
 @MappedSuperclass
+@ToString
 public class Quantity implements ValueObject {
 
     @Column(name = "quantity", nullable = false)
@@ -19,12 +22,11 @@ public class Quantity implements ValueObject {
     public Quantity() {
     }
 
+    // TODO VALIDATORS REQUIRE POSITIVE
     public Quantity(Long quantity) {
         Objects.requireNonNull(quantity, "Quantity must not be null!");
-        if (quantity <= 0) {
-            throw new RuntimeException("Quantity must be positive number");
-        }
-        this.quantity = quantity;
+
+        this.quantity = Validators.requireNonNegative(quantity);
     }
 
     public Quantity plus(long value) {

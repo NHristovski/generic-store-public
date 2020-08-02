@@ -26,7 +26,7 @@ public class ProductRatedEvent implements DomainEvent {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "UTC")
     private Instant occurredOn;
 
-    public ProductRatedEvent(ProductId productId, Integer rating, String topic) {
+    public ProductRatedEvent(ProductId productId, Integer rating) {
         this.id = DomainObjectId.randomId(DomainObjectId.class);
         this.productId = productId;
         this.rating = rating;

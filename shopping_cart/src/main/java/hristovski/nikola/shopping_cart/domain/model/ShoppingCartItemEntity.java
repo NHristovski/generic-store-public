@@ -1,11 +1,12 @@
 package hristovski.nikola.shopping_cart.domain.model;
 
 import hristovski.nikola.common.shared.domain.model.all.value.Money;
+import hristovski.nikola.common.shared.domain.model.all.value.Name;
 import hristovski.nikola.common.shared.domain.model.all.value.Quantity;
 import hristovski.nikola.common.shared.domain.model.product.ProductId;
 import hristovski.nikola.common.shared.domain.model.shopping_cart.ShoppingCartItemId;
 import hristovski.nikola.generic_store.base.domain.AbstractEntity;
-import hristovski.nikola.shopping_cart.application.port.exception.MaxQuantityReachedException;
+import hristovski.nikola.generic_store.base.domain.DomainObjectId;
 import hristovski.nikola.shopping_cart.application.port.exception.MinQuantityReachedException;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -38,22 +39,23 @@ public class ShoppingCartItemEntity extends AbstractEntity<ShoppingCartItemId> {
     @Embedded
     private Quantity quantity;
 
-//    @Embedded
-//    private ShoppingCartItemStatus status;
+    @Embedded
+    private Name productName;
 
-    public void incrementQuantity(int value) throws MaxQuantityReachedException {
-        // TODO send event.
-//        Response r = amqpTemplate.convertSendAndReceiv(newQuantity);
-//        if (r.ok){
-//            // inc quantity in db
-//            return ResponseEntity.ok()
-//        }else{
-//            return ResponseEntity.badRequest()
-//        }
+    public ShoppingCartItemEntity(ProductId productId, Money price, Quantity quantity, Name productName) {
+        super(DomainObjectId.randomId(ShoppingCartItemId.class));
+        this.version = 0L;
+        this.productId = productId;
+        this.price = price;
+        this.quantity = quantity;
+        this.productName = productName;
+    }
+
+    public void incrementQuantity(Long value) {
         this.quantity = quantity.plus(value);
     }
 
-    public void decrementQuantity(int value) throws MinQuantityReachedException {
+    public void decrementQuantity(int value) {
         this.quantity = quantity.minus(value);
     }
 

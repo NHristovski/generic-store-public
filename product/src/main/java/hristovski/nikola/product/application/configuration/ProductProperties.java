@@ -23,4 +23,6 @@ import javax.validation.constraints.NotNull;
 public class ProductProperties {
     @NotNull
     private String ratingService;
+    @NotNull
+    private String inventoryService;
 }

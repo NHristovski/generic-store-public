@@ -27,7 +27,6 @@ public class ProductRatingStatisticsChangedEvent implements DomainEvent {
     private RatingStatistics ratingStatistics;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "UTC")
     private Instant occurredOn;
-    private String topic;
 
     public ProductRatingStatisticsChangedEvent(ProductId productId,
                                                RatingStatistics ratingStatistics) {
@@ -35,7 +34,6 @@ public class ProductRatingStatisticsChangedEvent implements DomainEvent {
         this.productId = productId;
         this.ratingStatistics = ratingStatistics;
         this.occurredOn = Instant.now();
-        this.topic = TOPIC_PRODUCT_RATING_STATISTICS_CHANGED;
     }
 
     @Override
@@ -47,7 +45,7 @@ public class ProductRatingStatisticsChangedEvent implements DomainEvent {
     @Override
     @NonNull
     public String topic() {
-        return topic;
+        return TOPIC_PRODUCT_RATING_STATISTICS_CHANGED;
     }
 
     @Override

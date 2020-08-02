@@ -1,14 +1,15 @@
 package hristovski.nikola.product.domain.model.category;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import hristovski.nikola.generic_store.base.domain.AbstractEntity;
-import hristovski.nikola.generic_store.base.domain.DomainObjectId;
+import hristovski.nikola.common.shared.domain.model.all.value.Name;
 import hristovski.nikola.common.shared.domain.model.category.Category;
 import hristovski.nikola.common.shared.domain.model.category.CategoryId;
-import hristovski.nikola.common.shared.domain.model.all.value.Name;
+import hristovski.nikola.generic_store.base.domain.AbstractEntity;
+import hristovski.nikola.generic_store.base.domain.DomainObjectId;
 import hristovski.nikola.product.domain.model.product.ProductEntity;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import javax.persistence.AttributeOverride;
 import javax.persistence.CascadeType;
@@ -27,6 +28,7 @@ import static java.lang.Boolean.TRUE;
 
 @Data
 @AllArgsConstructor
+@NoArgsConstructor
 @Entity
 @Table(name = "category")
 public class CategoryEntity extends AbstractEntity<CategoryId> {
@@ -73,6 +75,10 @@ public class CategoryEntity extends AbstractEntity<CategoryId> {
     }
 
     public Category toCategory() {
+        if (deleted) {
+            return null;
+        }
+
         return new Category(
                 this.id(),
                 this.getVersion(),

@@ -1,5 +1,6 @@
 package hristovski.nikola.generic_store.auth.application.configuration;
 
+import com.netflix.discovery.EurekaClient;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
@@ -11,6 +12,7 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.web.client.RestTemplate;
 
 import javax.servlet.http.HttpServletResponse;
 
@@ -19,10 +21,13 @@ import javax.servlet.http.HttpServletResponse;
 @RequiredArgsConstructor
 public class SecurityCredentialsConfig extends WebSecurityConfigurerAdapter {
 
-
     @Qualifier("customUserDetailsService")
     private final UserDetailsService userDetailsService;
     private final JwtConfig jwtConfig;
+
+    private final ServicesConfig servicesConfig;
+    private final EurekaClient discoveryClient;
+    private final RestTemplate restTemplate;
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
@@ -34,7 +39,11 @@ public class SecurityCredentialsConfig extends WebSecurityConfigurerAdapter {
                 .exceptionHandling().authenticationEntryPoint((req, rsp, e) -> rsp.sendError(HttpServletResponse.SC_UNAUTHORIZED))
                 .and()
                 // Add a filter to validate user credentials and add token in the response header
-                .addFilter(new JwtUsernameAndPasswordAuthenticationFilter(authenticationManager(), jwtConfig))
+                .addFilter(new JwtUsernameAndPasswordAuthenticationFilter(
+                                authenticationManager(), discoveryClient, restTemplate,
+                                jwtConfig, servicesConfig
+                        )
+                )
                 .authorizeRequests()
                 // allow all POST requests
                 .antMatchers(HttpMethod.POST, jwtConfig.getUri()).permitAll()

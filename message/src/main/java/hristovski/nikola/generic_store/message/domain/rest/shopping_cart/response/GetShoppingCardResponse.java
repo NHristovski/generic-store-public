@@ -12,7 +12,7 @@ import javax.validation.constraints.NotNull;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class GetShoppingCardWithPendingItemsResponse {
+public class GetShoppingCardResponse {
     @NotNull
     ShoppingCart shoppingCart;
 }
