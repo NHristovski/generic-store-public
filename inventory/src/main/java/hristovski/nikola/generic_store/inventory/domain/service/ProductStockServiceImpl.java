@@ -3,6 +3,7 @@ package hristovski.nikola.generic_store.inventory.domain.service;
 import hristovski.nikola.common.shared.domain.factory.inventory.StockResponseElementFactory;
 import hristovski.nikola.common.shared.domain.model.all.value.Quantity;
 import hristovski.nikola.common.shared.domain.model.inventory.StockResponseElement;
+import hristovski.nikola.common.shared.domain.model.inventory.value.ProductReservation;
 import hristovski.nikola.common.shared.domain.model.product.ProductId;
 import hristovski.nikola.generic_store.inventory.domain.persistance.entity.ProductStockEntity;
 import hristovski.nikola.generic_store.inventory.domain.persistance.repository.ProductStockRepository;
@@ -73,7 +74,7 @@ public class ProductStockServiceImpl implements ProductStockService {
     public boolean updateStock(ProductId productId, Long quantity) {
         ProductStockEntity productStockEntity = productStockRepository.findByProductId(productId).orElseThrow(RuntimeException::new);
 
-        if (productStockEntity.getStock().getQuantity() < quantity){
+        if (productStockEntity.getStock().getQuantity() < quantity) {
             return false;
         }
 
@@ -82,5 +83,34 @@ public class ProductStockServiceImpl implements ProductStockService {
         productStockRepository.saveAndFlush(productStockEntity);
 
         return true;
+    }
+
+    @Override
+    public Boolean decrementStock(ProductId productId) {
+        try {
+            ProductStockEntity productStockEntity = productStockRepository.findByProductId(productId)
+                    .orElseThrow(RuntimeException::new);
+
+            productStockEntity.decrementStock();
+
+            productStockRepository.saveAndFlush(productStockEntity);
+
+            return true;
+        } catch (Exception ex) {
+            log.error("Failed to decrement product stock", ex);
+            return false;
+        }
+    }
+
+    @Override
+    public void freeProductsReservation(List<ProductReservation> productReservations) {
+        productReservations.forEach(reservation -> {
+            ProductStockEntity productStockEntity = productStockRepository.findByProductId(
+                    reservation.getProductId()
+            ).orElseThrow(RuntimeException::new);
+
+            productStockEntity.addStock(reservation.getQuantity());
+            productStockRepository.saveAndFlush(productStockEntity);
+        });
     }
 }

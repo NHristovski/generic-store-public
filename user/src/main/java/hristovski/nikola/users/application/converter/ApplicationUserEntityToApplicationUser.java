@@ -29,6 +29,7 @@ public class ApplicationUserEntityToApplicationUser implements Converter<Applica
         user.setVersion(applicationUserEntity.getVersion());
         user.setName(applicationUserEntity.getName());
         user.setEmail(applicationUserEntity.getEmail());
+        user.setCustomerId(applicationUserEntity.getCustomerId());
 
         user.setCredentials(new Credentials(
                         applicationUserEntity.getCredentials().getUsername(),

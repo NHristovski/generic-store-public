@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import javax.persistence.Embeddable;
 import javax.validation.constraints.NotNull;
@@ -15,6 +16,7 @@ import java.util.Objects;
 @Data
 @Embeddable
 @Builder
+@ToString
 public class Credentials implements ValueObject {
     @NotNull
     private String username;

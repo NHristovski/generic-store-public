@@ -1,6 +1,5 @@
 package hristovski.nikola.common.shared.domain.model.shopping_cart;
 
-import hristovski.nikola.common.shared.domain.model.user.ApplicationUserId;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

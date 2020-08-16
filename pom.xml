@@ -26,7 +26,7 @@
         <module>config_server</module>
         <module>message</module>
         <module>inventory</module>
-        <module>shipping</module>
+        <module>order</module>
     </modules>
 
     <properties>

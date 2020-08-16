@@ -7,8 +7,9 @@ import hristovski.nikola.common.shared.domain.model.product.ProductId;
 import hristovski.nikola.common.shared.domain.model.user.ApplicationUserId;
 import hristovski.nikola.generic_store.base.domain.DomainEventPublisher;
 import hristovski.nikola.generic_store.inventory.domain.service.ProductStockService;
-import hristovski.nikola.generic_store.message.domain.event.CreateShoppingCartItemCommand;
+import hristovski.nikola.generic_store.message.domain.event.command.CreateShoppingCartItemCommand;
 import hristovski.nikola.generic_store.message.domain.rest.inventory.request.CheckStockRequest;
+import hristovski.nikola.generic_store.message.domain.rest.inventory.request.DecrementStockResponse;
 import hristovski.nikola.generic_store.message.domain.rest.inventory.request.RestockRequest;
 import hristovski.nikola.generic_store.message.domain.rest.inventory.request.StockRequest;
 import hristovski.nikola.generic_store.message.domain.rest.inventory.response.CheckStockResponse;
@@ -43,6 +44,20 @@ public class ProductStockController {
         return ResponseEntity.ok(
                 StockResponse.builder().stocks(
                         stocks
+                ).build()
+        );
+    }
+
+    @PostMapping("/decrement_stock/{productId}")
+    public ResponseEntity<DecrementStockResponse> decrementStock(@PathVariable String productId) {
+
+        log.info("Called decrementStock for product {}", productId);
+
+        Boolean success = productStockService.decrementStock(new ProductId(productId));
+
+        return ResponseEntity.ok(
+                DecrementStockResponse.builder().success(
+                        success
                 ).build()
         );
     }

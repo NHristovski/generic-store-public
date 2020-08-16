@@ -1,12 +1,13 @@
 package hristovski.nikola.common.shared.domain.model.user;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import hristovski.nikola.generic_store.base.domain.DomainObjectId;
 import hristovski.nikola.common.shared.domain.model.user.value.Credentials;
 import hristovski.nikola.common.shared.domain.model.user.value.EmailAddress;
 import hristovski.nikola.common.shared.domain.model.user.value.FullName;
+import hristovski.nikola.generic_store.base.domain.DomainObjectId;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.ToString;
 
 import javax.persistence.Transient;
 import java.util.HashSet;
@@ -16,6 +17,7 @@ import java.util.stream.Collectors;
 
 @Data
 @AllArgsConstructor
+@ToString
 public class ApplicationUser {
 
     private Long version;
@@ -24,6 +26,7 @@ public class ApplicationUser {
     private EmailAddress email;
     private Credentials credentials;
     private Set<Role> roles;
+    private String customerId;
 
     public ApplicationUser() {
         applicationUserId = DomainObjectId.randomId(ApplicationUserId.class);
@@ -52,6 +55,17 @@ public class ApplicationUser {
         this.email = email;
         this.credentials = credentials;
         this.roles = roles;
+        this.customerId = null;
+    }
+
+    public ApplicationUser(ApplicationUserId id, FullName name, EmailAddress email,
+                           Credentials credentials, Set<Role> roles, String customerId) {
+        this.applicationUserId = id;
+        this.name = name;
+        this.email = email;
+        this.credentials = credentials;
+        this.roles = roles;
+        this.customerId = customerId;
     }
 
     @JsonIgnore

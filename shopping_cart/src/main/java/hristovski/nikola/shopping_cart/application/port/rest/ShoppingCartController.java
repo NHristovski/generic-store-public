@@ -1,5 +1,6 @@
 package hristovski.nikola.shopping_cart.application.port.rest;
 
+import hristovski.nikola.common.shared.domain.exception.RestRequestException;
 import hristovski.nikola.common.shared.domain.model.product.ProductId;
 import hristovski.nikola.common.shared.domain.model.shopping_cart.ShoppingCart;
 import hristovski.nikola.common.shared.domain.model.shopping_cart.ShoppingCartId;
@@ -67,23 +68,23 @@ public class ShoppingCartController {
         );
     }
 
-    @GetMapping("/history/{applicationUserId}")
-    public ResponseEntity<GetShoppingCartHistoryResponse> getShoppingCardHistory(
-//            HttpServletRequest httpRequest) {
-            @PathVariable String applicationUserId) {
-
-//        String username = httpRequest.getHeader("username");
-
-        return ResponseEntity.ok(
-                GetShoppingCartHistoryResponse.builder()
-                        .shoppingCart(
-                                shoppingCartService.getShoppingCartHistory(
-                                        new ApplicationUserId(applicationUserId)
-                                )
-                        )
-                        .build()
-        );
-    }
+//    @GetMapping("/history/{applicationUserId}")
+//    public ResponseEntity<GetShoppingCartHistoryResponse> getShoppingCardHistory(
+////            HttpServletRequest httpRequest) {
+//            @PathVariable String applicationUserId) {
+//
+////        String username = httpRequest.getHeader("username");
+//
+//        return ResponseEntity.ok(
+//                GetShoppingCartHistoryResponse.builder()
+//                        .shoppingCart(
+//                                shoppingCartService.getShoppingCartHistory(
+//                                        new ApplicationUserId(applicationUserId)
+//                                )
+//                        )
+//                        .build()
+//        );
+//    }
 
     @PostMapping("/{applicationUserId}")
     public ResponseEntity<AddProductToShoppingCartResponse> addProductToShoppingCard(
@@ -105,12 +106,12 @@ public class ShoppingCartController {
         );
     }
 
-    @PutMapping("{shoppingCartId}/item/{shoppingCartItemId}/increment/")
+    @PutMapping("{shoppingCartId}/item/{shoppingCartItemId}/increment")
     public ResponseEntity<ChangeQuantityResponse> incrementQuantity(
             @PathVariable String shoppingCartId,
             @PathVariable String shoppingCartItemId
     )
-            throws MaxQuantityReachedException {
+            throws MaxQuantityReachedException, RestRequestException {
 
         shoppingCartService.incrementQuantity(
                 new ShoppingCartId(shoppingCartId),
@@ -122,7 +123,7 @@ public class ShoppingCartController {
         );
     }
 
-    @PutMapping("{shoppingCartId}/item/{shoppingCartItemId}/decrement/")
+    @PutMapping("{shoppingCartId}/item/{shoppingCartItemId}/decrement")
     public ResponseEntity<ChangeQuantityResponse> decrementQuantity(
             @PathVariable String shoppingCartId,
             @PathVariable String shoppingCartItemId
@@ -145,6 +146,7 @@ public class ShoppingCartController {
             @PathVariable String shoppingCartItemId) {
 
         log.info("Deleting shoppingCartItem with id {}", shoppingCartItemId);
+
         shoppingCartService.deleteShoppingCardItem(
                 new ShoppingCartId(shoppingCartId),
                 new ShoppingCartItemId(shoppingCartItemId)
@@ -155,17 +157,17 @@ public class ShoppingCartController {
         );
     }
 
-    @PostMapping("/buy/{shoppingCartId}")
-    public ResponseEntity<BuyResponse> buy(@RequestBody @Valid BuyRequest buyRequest)
-            throws InsufficientQuantityException, FailedToBuyException {
-
-        log.info("BuyRequest: {}", buyRequest);
-
-        shoppingCartService.buy(buyRequest);
-
-        return ResponseEntity.ok(
-                BuyResponse.builder().build()
-        );
-    }
+//    @PostMapping("/buy/{shoppingCartId}")
+//    public ResponseEntity<BuyResponse> buy(@RequestBody @Valid BuyRequest buyRequest)
+//            throws InsufficientQuantityException, FailedToBuyException {
+//
+//        log.info("BuyRequest: {}", buyRequest);
+//
+//        shoppingCartService.buy(buyRequest);
+//
+//        return ResponseEntity.ok(
+//                BuyResponse.builder().build()
+//        );
+//    }
 
 }

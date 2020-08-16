@@ -4,4 +4,6 @@ public class Group {
     public static final String GROUP_ID_PRODUCT = "product";
     public static final String GROUP_ID_INVENTORY = "inventory";
     public static final String GROUP_ID_SHOPPING_CART = "shopping-cart";
+    public static final String GROUP_ID_USER = "user";
+    public static final String GROUP_ID_ORDER = "order";
 }

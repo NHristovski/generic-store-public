@@ -8,7 +8,6 @@ import hristovski.nikola.encryption.application.service.EncryptionService;
 import hristovski.nikola.generic_store.message.domain.rest.user.response.GetApplicationUserResponse;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -35,21 +34,23 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
 
         try {
-
-            log.info("Searching for service {}", servicesConfig.getUserService());
-
             InstanceInfo userServiceInfo = discoveryClient
                     .getNextServerFromEureka(servicesConfig.getUserService(), false);
-            log.info("The server url is: {}", userServiceInfo.getHomePageUrl());
 
-            String url = userServiceInfo.getHomePageUrl() + username;
 
-            GetApplicationUserResponse applicationUserResponse = restTemplate.getForObject(url, GetApplicationUserResponse.class);
+            String url = userServiceInfo.getHomePageUrl() + "private/username/" + username;
+
+            log.info("Sending REST request to {}", url);
+
+            GetApplicationUserResponse applicationUserResponse =
+                    restTemplate.getForObject(url, GetApplicationUserResponse.class);
+
 
             if (applicationUserResponse == null || applicationUserResponse.getUser() == null) {
                 log.error("Failed to get user by username application user is null");
                 throw new UsernameNotFoundException("Username: " + username + " not found");
             }
+
 
             ApplicationUser user = applicationUserResponse.getUser();
 

@@ -9,6 +9,7 @@
         <outputRelativeToContentRoot value="true" />
         <module name="payment" />
         <module name="product" />
+        <module name="order" />
         <module name="encryption" />
         <module name="auth" />
         <module name="service_registry" />
@@ -19,7 +20,6 @@
         <module name="message" />
         <module name="user" />
         <module name="api_gateway" />
-        <module name="shipping" />
         <module name="common" />
         <module name="shopping_cart" />
       </profile>

@@ -3,7 +3,6 @@ package hristovski.nikola.common.shared.domain.model.user;
 import hristovski.nikola.generic_store.base.domain.DomainObjectId;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import lombok.ToString;
 
 import javax.persistence.Embeddable;
 
@@ -17,6 +16,11 @@ public class ApplicationUserId extends DomainObjectId {
 
     public ApplicationUserId(String id) {
         super(id);
+    }
+
+    @Override
+    public String toString() {
+        return super.toString();
     }
 }
 

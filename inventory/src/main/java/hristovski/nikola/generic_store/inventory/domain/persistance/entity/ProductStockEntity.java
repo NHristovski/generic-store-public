@@ -53,4 +53,12 @@ public class ProductStockEntity extends AbstractEntity<ProductStockId> {
     public void reserve(Long quantity) {
         this.stock = stock.minus(quantity);
     }
+
+    public void decrementStock() {
+        this.stock = stock.minus(1L);
+    }
+
+    public void addStock(Quantity quantity){
+        this.stock = this.stock.plus(quantity.getQuantity());
+    }
 }

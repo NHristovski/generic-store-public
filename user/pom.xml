@@ -65,6 +65,12 @@
             <groupId>hristovski.nikola</groupId>
             <artifactId>message</artifactId>
         </dependency>
+
+        <!-- Messaging -->
+        <dependency>
+            <groupId>org.springframework.kafka</groupId>
+            <artifactId>spring-kafka</artifactId>
+        </dependency>
     </dependencies>
 
     <properties>

@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -56,7 +57,15 @@ public class ProductServiceImpl implements ProductService {
                 List.of(productEntity.getId()),
                 userId
         );
-        return personalizeProduct(productEntity, productRatings);
+
+        Map<ProductId, StockResponseElement> productStocks = inventoryService.getProductStocks(
+                List.of(productEntity.getId())
+        );
+
+        return Stream.of(productEntity)
+                .map(product -> personalizeProduct(product, productRatings))
+                .map(product -> adjustStock(product, productStocks))
+                .collect(Collectors.toList()).get(0);
     }
 
     private ProductEntity getProductEntity(ProductId productId) throws ProductNotFoundException {

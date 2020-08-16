@@ -3,11 +3,12 @@ package hristovski.nikola.users.exception;
 public class UserNotFoundException extends RuntimeException {
 
     private static final String MESSAGE = "Failed to find user";
-    public UserNotFoundException(){
+
+    public UserNotFoundException() {
         super(MESSAGE);
     }
 
-    public UserNotFoundException(String username){
-        super(MESSAGE + " with username " + username);
+    public UserNotFoundException(String identifier) {
+        super(MESSAGE + identifier);
     }
 }

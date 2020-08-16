@@ -12,7 +12,7 @@ public class Validators {
 
     public static Long requireNonNegative(Long value) throws IllegalArgumentException {
         if (value == null || value < 0) {
-            throw new IllegalArgumentException(value + "is not positive!");
+            throw new IllegalArgumentException(value + " is not positive!");
         }
         return value;
     }

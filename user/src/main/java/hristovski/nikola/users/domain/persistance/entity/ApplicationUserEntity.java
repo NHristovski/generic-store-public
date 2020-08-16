@@ -1,14 +1,15 @@
 package hristovski.nikola.users.domain.persistance.entity;
 
-import hristovski.nikola.generic_store.base.domain.AbstractEntity;
-import hristovski.nikola.generic_store.base.domain.DomainObjectId;
 import hristovski.nikola.common.shared.domain.model.user.ApplicationUserId;
 import hristovski.nikola.common.shared.domain.model.user.value.Credentials;
 import hristovski.nikola.common.shared.domain.model.user.value.EmailAddress;
 import hristovski.nikola.common.shared.domain.model.user.value.FullName;
+import hristovski.nikola.generic_store.base.domain.AbstractEntity;
+import hristovski.nikola.generic_store.base.domain.DomainObjectId;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 
 import javax.persistence.AttributeOverride;
 import javax.persistence.AttributeOverrides;
@@ -31,6 +32,7 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 @Entity
 @Table(name = "users")
+@ToString
 public class ApplicationUserEntity extends AbstractEntity<ApplicationUserId> {
 
     @Version
@@ -56,6 +58,8 @@ public class ApplicationUserEntity extends AbstractEntity<ApplicationUserId> {
     })
     private Credentials credentials;
 
+    private String customerId;
+
     @ManyToMany(cascade = CascadeType.PERSIST, fetch = FetchType.EAGER)
     @JoinTable(
             name = "user_roles",
@@ -73,6 +77,7 @@ public class ApplicationUserEntity extends AbstractEntity<ApplicationUserId> {
         this.name = name;
         this.email = email;
         this.credentials = credentials;
+        this.customerId = null;
 //        roles = new ArrayList<>();
     }
 
@@ -87,6 +92,7 @@ public class ApplicationUserEntity extends AbstractEntity<ApplicationUserId> {
         this.email = email;
         this.credentials = credentials;
         this.roles = roles;
+        this.customerId = null;
     }
 
     public void setEmail(EmailAddress email) {
@@ -103,6 +109,10 @@ public class ApplicationUserEntity extends AbstractEntity<ApplicationUserId> {
                 .map(Enum::name)
                 .peek(System.out::println)
                 .collect(Collectors.joining(","));
+    }
+
+    public void updateCustomerId(String customerId) {
+        this.customerId = customerId;
     }
 
 }

@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.ToString;
 
 import javax.persistence.Embeddable;
 import javax.persistence.Transient;
@@ -18,6 +19,7 @@ import java.util.regex.Pattern;
 @Data
 @Embeddable
 @Builder
+@ToString
 public class EmailAddress implements ValueObject {
     @Transient
     @JsonIgnore

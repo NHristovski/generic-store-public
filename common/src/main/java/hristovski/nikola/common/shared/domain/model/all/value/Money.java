@@ -2,6 +2,8 @@ package hristovski.nikola.common.shared.domain.model.all.value;
 
 import hristovski.nikola.generic_store.base.domain.ValueObject;
 import lombok.Getter;
+import lombok.ToString;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.persistence.Column;
 import javax.persistence.Embeddable;
@@ -10,6 +12,7 @@ import javax.persistence.Enumerated;
 import java.util.Objects;
 
 @Embeddable
+@ToString
 @Getter
 public class Money implements ValueObject {
 
@@ -51,7 +54,8 @@ public class Money implements ValueObject {
     }
 
     public Money times(long value) {
-        return new Money(currency, amount * value);
+        Money newMoney = new Money(currency, amount * value);
+        return newMoney;
     }
 
 
