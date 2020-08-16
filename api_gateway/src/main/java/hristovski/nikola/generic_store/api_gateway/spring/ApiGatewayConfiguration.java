@@ -15,8 +15,7 @@ public class ApiGatewayConfiguration {
     public ApiGatewayConfiguration() {
         log.info("Auth configuration initialized.");
     }
-
-    //TODO REMOVE
+    
     @Bean
     public RestTemplate restTemplate(RestTemplateBuilder restTemplateBuilder) {
         return restTemplateBuilder.build();

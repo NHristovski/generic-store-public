@@ -3,7 +3,7 @@ package hristovski.nikola.product.domain.service;
 import hristovski.nikola.common.shared.domain.model.category.CategoryId;
 import hristovski.nikola.common.shared.domain.model.all.value.Name;
 import hristovski.nikola.product.domain.exception.CategoryNotFoundException;
-import hristovski.nikola.product.domain.model.category.CategoryEntity;
+import hristovski.nikola.product.domain.persistance.entity.CategoryEntity;
 
 import java.util.List;
 

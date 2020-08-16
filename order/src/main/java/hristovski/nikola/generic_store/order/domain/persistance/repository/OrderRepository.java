@@ -10,5 +10,10 @@ import java.util.List;
 
 @Repository
 public interface OrderRepository extends JpaRepository<OrderEntity, OrderId> {
-    List<OrderEntity> findAllByUserIdEquals(ApplicationUserId applicationUserId);
+    List<OrderEntity> findAllByUserIdEqualsOrderByCreatedOnDesc(ApplicationUserId applicationUserId);
+
+    List<OrderEntity> findAllByIdIdContainsIgnoreCaseOrUserIdIdContainsIgnoreCaseOrderByCreatedOnDesc
+            (String query1, String query2);
+
+    List<OrderEntity> findAllByOrderByCreatedOnDesc();
 }

@@ -1,11 +1,11 @@
 package hristovski.nikola.product.domain.service;
 
 
-import hristovski.nikola.common.shared.domain.model.category.CategoryId;
 import hristovski.nikola.common.shared.domain.model.all.value.Name;
+import hristovski.nikola.common.shared.domain.model.category.CategoryId;
 import hristovski.nikola.product.domain.exception.CategoryNotFoundException;
-import hristovski.nikola.product.domain.model.category.CategoryEntity;
-import hristovski.nikola.product.domain.repository.CategoryRepository;
+import hristovski.nikola.product.domain.persistance.entity.CategoryEntity;
+import hristovski.nikola.product.domain.persistance.repository.CategoryRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -38,6 +38,7 @@ public class CategoryServiceImpl implements CategoryService {
         CategoryEntity categoryEntity = findCategoryEntity(categoryId);
 
         categoryEntity.delete();
+        categoryEntity.setCategoryName(new Name(categoryEntity.getId().getId()));
 
         categoryRepository.saveAndFlush(categoryEntity);
     }

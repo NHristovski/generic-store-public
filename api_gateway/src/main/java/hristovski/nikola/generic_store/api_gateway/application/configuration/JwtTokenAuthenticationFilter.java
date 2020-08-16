@@ -21,8 +21,6 @@ import java.util.stream.Collectors;
  * Authenticate the user with the authorities from the token.
  */
 @Slf4j
-//TODO CHECK IF IT WORKS WITHOUT THIS
-//@CrossOrigin(origins = "http://localhost:4200", maxAge = 3600)
 @RequiredArgsConstructor
 public class JwtTokenAuthenticationFilter extends OncePerRequestFilter {
 

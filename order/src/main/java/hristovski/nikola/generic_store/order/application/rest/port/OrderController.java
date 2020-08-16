@@ -41,6 +41,29 @@ public class OrderController {
         );
     }
 
+    @GetMapping("/admin/all")
+    public ResponseEntity<GetOrdersResponse> getOrdersResponse() {
+
+        log.info("Got get all orders request");
+
+        return ResponseEntity.ok(GetOrdersResponse.builder()
+                .orders(
+                        orderService.getAllOrders()
+                ).build()
+        );
+    }
+
+    @GetMapping("/admin/search/{query}")
+    public ResponseEntity<GetOrdersResponse> search(@PathVariable String query) {
+        log.info("Got search orders request with query {}", query);
+
+        return ResponseEntity.ok(GetOrdersResponse.builder()
+                .orders(
+                        orderService.searchOrders(query)
+                ).build()
+        );
+    }
+
     @GetMapping("/{orderId}/status")
     public ResponseEntity<GetOrderStatusResponse> getOrderStatusResponse(@PathVariable String orderId) {
 
@@ -83,4 +106,6 @@ public class OrderController {
                         .build()
         );
     }
+
+
 }

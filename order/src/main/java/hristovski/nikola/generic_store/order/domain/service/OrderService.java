@@ -22,4 +22,8 @@ public interface OrderService {
     List<Order> getOrdersForUser(ApplicationUserId applicationUserId);
 
     Integer getOrderStatus(OrderId orderId);
+
+    List<Order> getAllOrders();
+
+    List<Order> searchOrders(String query);
 }

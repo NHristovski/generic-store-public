@@ -8,6 +8,7 @@ import hristovski.nikola.users.domain.persistance.repository.ApplicationUserRepo
 import hristovski.nikola.users.domain.persistance.repository.RoleRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.stereotype.Service;
 
@@ -23,6 +24,9 @@ public class DataInitializer {
     private final ApplicationUserRepository applicationUserRepository;
     private final RoleRepository roleRepository;
     private final ConversionService conversionService;
+
+    @Value("${admin.password}")
+    private String password;
 
     @PostConstruct
     public void init() {
@@ -45,8 +49,8 @@ public class DataInitializer {
                     "admin",
                     "admin",
                     "admin@gmail.com",
-                    "admin",
-                    "admin"
+                    password,
+                    password
             );
             try {
                 ApplicationUserEntity adminUser = conversionService.convert(registerRequest, ApplicationUserEntity.class);

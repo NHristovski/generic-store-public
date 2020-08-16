@@ -2,8 +2,8 @@ package hristovski.nikola.shopping_cart.application.converter;
 
 import hristovski.nikola.common.shared.domain.model.shopping_cart.ShoppingCart;
 import hristovski.nikola.common.shared.domain.model.shopping_cart.ShoppingCartItem;
-import hristovski.nikola.shopping_cart.domain.model.cart.ShoppingCartEntity;
-import hristovski.nikola.shopping_cart.domain.model.cart.ShoppingCartItemEntity;
+import hristovski.nikola.shopping_cart.domain.persistence.entity.ShoppingCartEntity;
+import hristovski.nikola.shopping_cart.domain.persistence.entity.ShoppingCartItemEntity;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.stereotype.Service;

@@ -22,7 +22,6 @@ public class Quantity implements ValueObject {
     public Quantity() {
     }
 
-    // TODO VALIDATORS REQUIRE POSITIVE
     public Quantity(Long quantity) {
         Objects.requireNonNull(quantity, "Quantity must not be null!");
 

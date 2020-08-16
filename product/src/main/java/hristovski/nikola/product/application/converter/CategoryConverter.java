@@ -1,7 +1,7 @@
 package hristovski.nikola.product.application.converter;
 
 import hristovski.nikola.common.shared.domain.model.category.Category;
-import hristovski.nikola.product.domain.model.category.CategoryEntity;
+import hristovski.nikola.product.domain.persistance.entity.CategoryEntity;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.stereotype.Service;

@@ -69,7 +69,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public List<Order> getOrdersForUser(ApplicationUserId applicationUserId) {
-        return orderRepository.findAllByUserIdEquals(applicationUserId).stream()
+        return orderRepository.findAllByUserIdEqualsOrderByCreatedOnDesc(applicationUserId).stream()
                 .map(OrderEntity::toOrder)
                 .collect(Collectors.toList());
     }
@@ -92,5 +92,21 @@ public class OrderServiceImpl implements OrderService {
             return 3;
         }
         return -1;
+    }
+
+    @Override
+    public List<Order> getAllOrders() {
+        return orderRepository.findAllByOrderByCreatedOnDesc().stream()
+                .map(OrderEntity::toOrder)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Order> searchOrders(String query) {
+        return orderRepository
+                .findAllByIdIdContainsIgnoreCaseOrUserIdIdContainsIgnoreCaseOrderByCreatedOnDesc(query, query)
+                .stream()
+                .map(OrderEntity::toOrder)
+                .collect(Collectors.toList());
     }
 }

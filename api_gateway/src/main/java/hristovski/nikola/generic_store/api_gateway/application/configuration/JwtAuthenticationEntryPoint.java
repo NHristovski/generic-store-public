@@ -13,8 +13,6 @@ import java.io.IOException;
  * Error handling.
  */
 @Component
-//TODO CHECK IF THIS IS WORKING WITH COMENTED
-//@CrossOrigin(origins = "http://localhost:4200", maxAge = 3600)
 public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
     @Override
     public void commence(HttpServletRequest httpServletRequest, HttpServletResponse response, AuthenticationException e) throws IOException, ServletException {

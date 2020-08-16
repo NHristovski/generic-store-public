@@ -1,16 +1,9 @@
 package hristovski.nikola.product.domain.event.listener;
 
-import hristovski.nikola.generic_store.base.domain.DomainEvent;
-import hristovski.nikola.product.domain.event.ProductRatingStatisticsChangedEvent;
-import hristovski.nikola.product.domain.model.product.ProductEntity;
-import hristovski.nikola.product.domain.repository.ProductRepository;
+import hristovski.nikola.product.domain.persistance.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
-
-import static hristovski.nikola.common.shared.domain.constants.Group.GROUP_ID_PRODUCT;
-import static hristovski.nikola.common.shared.domain.constants.Topic.TOPIC_PRODUCT_RATING_STATISTICS_CHANGED;
 
 @Service
 @RequiredArgsConstructor

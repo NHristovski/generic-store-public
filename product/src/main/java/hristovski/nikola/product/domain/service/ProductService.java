@@ -13,7 +13,7 @@ import hristovski.nikola.common.shared.domain.model.product.value.ProductInforma
 import hristovski.nikola.common.shared.domain.model.user.ApplicationUserId;
 import hristovski.nikola.product.domain.exception.CategoryNotFoundException;
 import hristovski.nikola.product.domain.exception.ProductNotFoundException;
-import hristovski.nikola.product.domain.model.product.ProductEntity;
+import hristovski.nikola.product.domain.persistance.entity.ProductEntity;
 
 import java.util.List;
 import java.util.Set;
