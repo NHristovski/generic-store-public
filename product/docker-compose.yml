@@ -1,73 +1,160 @@
 version: "3.7"
-
 services:
-  service-registry:
-    image: nikolancaid/service-registry
+  zookeeper:
+    image: confluentinc/cp-zookeeper:5.5.1
+    hostname: zookeeper
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+  broker:
+    image: confluentinc/cp-server:5.5.1
+    hostname: broker
+    container_name: broker
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+      - "9101:9101"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker:29092,PLAINTEXT_HOST://35.222.22.198:9092
+      KAFKA_METRIC_REPORTERS: io.confluent.metrics.reporter.ConfluentMetricsReporter
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_CONFLUENT_LICENSE_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_JMX_PORT: 9101
+      CONFLUENT_METRICS_REPORTER_BOOTSTRAP_SERVERS: broker:29092
+      CONFLUENT_METRICS_REPORTER_ZOOKEEPER_CONNECT: zookeeper:2181
+      CONFLUENT_METRICS_REPORTER_TOPIC_REPLICAS: 1
+      CONFLUENT_METRICS_ENABLE: 'true'
+      CONFLUENT_SUPPORT_CUSTOMER_ID: 'anonymous'
+
+  service-discovery:
+    image: nikolahristovski/service-registry:0.0.1-SNAPSHOT
     container_name: service-registry
-    networks:
-      - internal
-    ports:
-      - "8761:8761"
+    depends_on:
+      - broker
+  config-server:
+    image: nikolahristovski/config_server:0.0.1-SNAPSHOT
+    container_name: config-server
+    depends_on:
+      - service-discovery
   api-gateway:
-    image: nikolancaid/api-gateway
-    networks:
-      - internal
-    ports:
-      - "8762:8762"
+    image: nikolahristovski/api-gateway:0.0.1-SNAPSHOT
     container_name: api-gateway
     depends_on:
-      - service-registry
-  auth-service:
-    image: nikolancaid/auth-service
-    networks:
-      - internal
-    ports:
-      - "9100:9100"
-    container_name: auth-service
+      - service-discovery
+      - config-server
+  auth:
+    image: nikolahristovski/auth:0.0.1-SNAPHOST
+    container_name: auth
     depends_on:
-      - service-registry
-  products:
-    image: nikolancaid/products
-    networks:
-      - internal
-    ports:
-      - "8200:8200"
-    container_name: products
+      - service-discovery
+      - config-server
+  product:
+    image: nikolahristovski/product:0.0.1-SNAPSHOT
+    container_name: product
     depends_on:
-      - service-registry
+      - service-discovery
       - postgres-products
-  postgres-products:
+      - config-server
+  postgres-product:
     image: postgres
-    networks:
-      - internal
-    ports:
-      - "5432:5432"
-    container_name: pgproducts
+    container_name: pgproduct
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
-  users:
-    image: nikolancaid/users
-    networks:
-      - internal
-    ports:
-      - "8080:8080"
-    container_name: users
+  user:
+    image: nikolahristovski/user:0.0.1-SNAPHOST
+    container_name: user
     depends_on:
-      - service-registry
+      - service-discovery
       - postgres-users
-  postgres-users:
+      - config-server
+  postgres-user:
     image: postgres
-    networks:
-      - internal
-    ports:
-      - "5433:5432"
-    container_name: pgusers
+    container_name: pguser
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
-
-networks:
-  internal:
-    name: internal
-    driver: bridge
+  shopping-cart:
+    image: nikolahristovski/shopping_cart:0.0.1-SNAPHOST
+    container_name: shopping-cart
+    depends_on:
+      - service-discovery
+      - postgres-shopping-cart
+      - config-server
+  postgres-shopping-cart:
+    image: postgres
+    container_name: pgshoppingcart
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+  rating:
+    image: nikolahristovski/rating:0.0.1-SNAPHOST
+    container_name: rating
+    depends_on:
+      - service-discovery
+      - postgres-rating
+      - config-server
+  postgres-rating:
+    image: postgres
+    container_name: pgrating
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+  payment:
+    image: nikolahristovski/payment:0.0.1-SNAPHOST
+    container_name: payment
+    depends_on:
+      - service-discovery
+      - config-server
+  order:
+    image: nikolahristovski/order:0.0.1-SNAPHOST
+    container_name: order
+    depends_on:
+      - service-discovery
+      - postgres-order
+      - config-server
+  postgres-order:
+    image: postgres
+    container_name: pgorder
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+  inventory:
+    image: nikolahristovski/inventory:0.0.1-SNAPHOST
+    container_name: inventory
+    depends_on:
+      - service-discovery
+      - postgres-inventory
+      - config-server
+  postgres-inventory:
+    image: postgres
+    container_name: pginventory
+    environment:
+      POSTGRES_USER: postgres
+  frontend:
+    image: nikolahristovski/frontend:0.0.1
+    container_name: frontend
+    depends_on:
+      - service-discovery
+      - config-server
+      - api-gateway
+      - auth
+      - product
+      - user
+      - shopping-cart
+      - rating
+      - payment
+      - order
+      - inventory
+    ports:
+      - 18666:80
