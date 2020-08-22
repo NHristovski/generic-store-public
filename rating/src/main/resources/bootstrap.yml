@@ -3,6 +3,7 @@ spring:
     config:
       discovery:
         serviceId: "configserver"
+        enabled: true
       fail-fast: true
   application:
     name: rating-service
