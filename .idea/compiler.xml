@@ -14,11 +14,12 @@
         <module name="auth" />
         <module name="service_registry" />
         <module name="rating" />
-        <module name="config_server" />
+        <module name="zipkin" />
         <module name="inventory" />
         <module name="base" />
         <module name="message" />
         <module name="user" />
+        <module name="config_server" />
         <module name="api_gateway" />
         <module name="common" />
         <module name="shopping_cart" />

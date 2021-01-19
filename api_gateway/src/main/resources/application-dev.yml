@@ -1,0 +1,94 @@
+#server:
+#  port: 8762
+#
+#spring:
+#  application:
+#    name: zuul-service
+#  eureka:
+#    client:
+#      service-url:
+#        defaultZone: http://localhost:8761/eureka
+#
+#  # Disable accessing services using service name
+#
+#ribbon:
+#  ConnectTimeout: 40000
+#  ReadTimeout: 40000
+#
+#hystrix:
+#  command:
+#    default:
+#      execution:
+#        isolation:
+#          thread:
+#            timeoutInMilliseconds: 180000
+#
+#zuul:
+#
+#  host:
+#    socket-timeout-millis: 40000
+#    connect-timeout-millis: 40000
+#
+#  ignored-services: "*"
+#
+#  ribbon:
+#    eager-load:
+#      enabled: true
+#
+#  retryable: true
+#  # Map paths to product service
+#  routes:
+#    worker-service:
+#      path: /product/**
+#      service-id: product-service
+#
+#    rating-service:
+#      path: /ratings/**
+#      service-id: rating-service
+#
+#    inventory-service:
+#      path: /inventory/**
+#      service-id: inventory-service
+#    # Map path to auth service
+#
+#    shopping-cart-service:
+#      path: /shopping-cart/**
+#      service-id: shopping-cart-service
+#
+#    auth-service:
+#      path: /auth/**
+#      service-id: auth-service
+#      strip-prefix: false
+#      sensitive-headers: Cookie,Set-Cookie
+#
+#    # Map paths to users service
+#    user-service:
+#      path: /users/**
+#      service-id: user-service
+#
+#    payment-service:
+#      path: /payment/**
+#      service-id: payment-service
+#
+#    order-service:
+#      path: /orders/**
+#      service-id: order-service
+#
+#
+##management:trace:http:include:AUTHORIZATION_HEADER,COOKIE_HEADERS,PRINCIPAL,REMOTE_ADDRESS,REQUEST_HEADERS,RESPONSE_HEADERS,SESSION_ID,TIME_TAKEN
+##
+##management:endpoints:web:exposure:include:httptrace
+#
+#security:
+#  jwt:
+#    uri: /auth/**
+#    header: Authorization
+#    prefix: Bearer
+#    expiration: 86400
+#    secret: Tmlrb2xhU2VjcmV0S2V5IA0K
+#
+##logging:
+##  level:
+##    org:
+##      springframework: DEBUG
+#

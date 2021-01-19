@@ -1,0 +1,12 @@
+hristovski\nikola\generic_store\order\application\converter\ShoppingCartItemConverter.class
+hristovski\nikola\generic_store\order\domain\service\OrderServiceImpl.class
+hristovski\nikola\generic_store\order\domain\persistance\repository\OrderRepository.class
+hristovski\nikola\generic_store\order\application\OrderApplication.class
+hristovski\nikola\generic_store\order\OrderComponents.class
+hristovski\nikola\generic_store\order\application\rest\port\OrderController.class
+hristovski\nikola\generic_store\order\domain\service\OrderService.class
+hristovski\nikola\generic_store\order\spring\OrderConfiguration.class
+hristovski\nikola\generic_store\order\domain\persistance\entity\OrderItemEntity.class
+hristovski\nikola\generic_store\order\spring\KafkaConfiguration.class
+hristovski\nikola\generic_store\order\domain\event\listener\CreateOrderCommandListener.class
+hristovski\nikola\generic_store\order\domain\persistance\entity\OrderEntity.class

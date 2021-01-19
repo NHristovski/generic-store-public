@@ -1,0 +1,14 @@
+spring:
+  cloud:
+    config:
+      discovery:
+        serviceId: "configserver"
+        enabled: true
+      fail-fast: true
+  application:
+    name: order-service
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://service-discovery:8761/eureka
