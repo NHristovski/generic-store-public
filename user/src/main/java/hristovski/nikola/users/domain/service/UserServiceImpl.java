@@ -37,10 +37,14 @@ public class UserServiceImpl implements UserService {
             ApplicationUserEntity user = conversionService.convert(registerRequest, ApplicationUserEntity.class);
 
             Objects.requireNonNull(user, "User must not be null!");
+            log.info("The user is not null");
 
-            applicationUserRepository.save(user);
+//            applicationUserRepository.save(user);
 
             user.setRoles(Collections.singleton(roleRepository.findByName(RoleName.ROLE_USER).get()));
+
+            log.info("Set roles finished");
+
             applicationUserRepository.save(user);
 
             log.info("Register successful");
