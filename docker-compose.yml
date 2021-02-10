@@ -1,0 +1,227 @@
+version: "3.7"
+services:
+  zipkin:
+    image: openzipkin/zipkin
+    container_name: zipkin
+    ports:
+      - "9411:9411"
+  zookeeper:
+    image: confluentinc/cp-zookeeper:6.0.1
+    hostname: zookeeper
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+  broker:
+    image: confluentinc/cp-server:6.0.1
+    hostname: broker
+    container_name: broker
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+      - "9101:9101"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker:29092,PLAINTEXT_HOST://34.107.100.32:9092
+      KAFKA_METRIC_REPORTERS: io.confluent.metrics.reporter.ConfluentMetricsReporter
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_CONFLUENT_LICENSE_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_CONFLUENT_BALANCER_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_JMX_PORT: 9101
+      KAFKA_JMX_HOSTNAME: localhost
+      KAFKA_CONFLUENT_SCHEMA_REGISTRY_URL: http://schema-registry:8081
+      CONFLUENT_METRICS_REPORTER_BOOTSTRAP_SERVERS: broker:29092
+      CONFLUENT_METRICS_REPORTER_TOPIC_REPLICAS: 1
+      CONFLUENT_METRICS_ENABLE: 'true'
+      CONFLUENT_SUPPORT_CUSTOMER_ID: 'anonymous'
+  service-discovery:
+    image: nikolahristovski/service_registry:0.0.1-SNAPSHOT
+    container_name: service-discovery
+    depends_on:
+      - zookeeper
+      - broker
+    ports:
+      - "8761:8761"
+  config-server:
+    image: nikolahristovski/config_server:0.0.1-SNAPSHOT
+    container_name: config-server
+    depends_on:
+      - service-discovery
+      - zookeeper
+      - broker
+      - zipkin
+  api-gateway:
+    image: nikolahristovski/api_gateway:0.0.1-SNAPSHOT
+    container_name: api-gateway
+    depends_on:
+      - service-discovery
+      - config-server
+      - zookeeper
+      - broker
+      - zipkin
+    ports:
+      - "8762:8762"
+  auth:
+    image: nikolahristovski/auth:0.0.1-SNAPSHOT
+    container_name: auth
+    depends_on:
+      - service-discovery
+      - config-server
+      - zookeeper
+      - broker
+      - zipkin
+  product:
+    image: nikolahristovski/product:0.0.1-SNAPSHOT
+    container_name: product
+    depends_on:
+      - service-discovery
+      - postgres-product
+      - config-server
+      - zookeeper
+      - broker
+      - zipkin
+  postgres-product:
+    image: postgres
+    container_name: postgres-product
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    volumes:
+      - product-data:/var/lib/postgresql/data
+  user:
+    image: nikolahristovski/user:0.0.1-SNAPSHOT
+    container_name: user
+    depends_on:
+      - service-discovery
+      - postgres-user
+      - config-server
+      - zookeeper
+      - broker
+      - zipkin
+  postgres-user:
+    image: postgres
+    container_name: postgres-user
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    volumes:
+      - user-data:/var/lib/postgresql/data
+  shopping-cart:
+    image: nikolahristovski/shopping_cart:0.0.1-SNAPSHOT
+    container_name: shopping-cart
+    depends_on:
+      - service-discovery
+      - postgres-shopping-cart
+      - config-server
+      - zookeeper
+      - broker
+      - zipkin
+  postgres-shopping-cart:
+    image: postgres
+    container_name: postgres-shopping-cart
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    volumes:
+      - shopping-cart-data:/var/lib/postgresql/data
+  rating:
+    image: nikolahristovski/rating:0.0.1-SNAPSHOT
+    container_name: rating
+    depends_on:
+      - service-discovery
+      - postgres-rating
+      - config-server
+      - zookeeper
+      - broker
+      - zipkin
+  postgres-rating:
+    image: postgres
+    container_name: postgres-rating
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    volumes:
+      - rating-data:/var/lib/postgresql/data
+  payment:
+    image: nikolahristovski/payment:0.0.1-SNAPSHOT
+    container_name: payment
+    depends_on:
+      - service-discovery
+      - config-server
+      - zookeeper
+      - broker
+      - zipkin
+  order:
+    image: nikolahristovski/order:0.0.1-SNAPSHOT
+    container_name: order
+    depends_on:
+      - service-discovery
+      - postgres-order
+      - config-server
+      - zookeeper
+      - broker
+      - zipkin
+  postgres-order:
+    image: postgres
+    container_name: postgres-order
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    volumes:
+      - order-data:/var/lib/postgresql/data
+  inventory:
+    image: nikolahristovski/inventory:0.0.1-SNAPSHOT
+    container_name: inventory
+    depends_on:
+      - service-discovery
+      - postgres-inventory
+      - config-server
+      - zookeeper
+      - broker
+      - zipkin
+  postgres-inventory:
+    image: postgres
+    container_name: postgres-inventory
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    volumes:
+      - inventory-data:/var/lib/postgresql/data
+  frontend:
+    image: nikolahristovski/frontend:0.0.1
+    container_name: frontend
+    depends_on:
+      - service-discovery
+      - config-server
+      - api-gateway
+      - auth
+      - product
+      - user
+      - shopping-cart
+      - rating
+      - payment
+      - order
+      - inventory
+      - zookeeper
+      - broker
+      - zipkin
+    ports:
+      - 80:80
+
+volumes:
+  product-data:
+  user-data:
+  shopping-cart-data:
+  rating-data:
+  order-data:
+  inventory-data:
+
+
