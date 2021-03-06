@@ -13,5 +13,4 @@ eureka:
     registerWithEureka: false
     fetchRegistry: true
     service-url:
-      defaultZone: http://service-discovery:8761/eureka
-
+      defaultZone: http://service-discovery-priv-service/eureka
