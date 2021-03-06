@@ -32,10 +32,10 @@ public class RatingServiceImpl implements RatingService {
     public Integer getCurrentRating(ProductId productId, ApplicationUserId userId)
             throws RestRequestException {
         try {
-            InstanceInfo ratingServiceInfo = discoveryClient
-                    .getNextServerFromEureka(productProperties.getRatingService(), SECURE);
+//            InstanceInfo ratingServiceInfo = discoveryClient
+//                    .getNextServerFromEureka(productProperties.getRatingService(), SECURE);
 
-            String url = buildRequestUrl(productId, userId, ratingServiceInfo);
+            String url = buildRequestUrl(productId, userId);
 
             log.info("Sending request to {}", url);
 
@@ -97,9 +97,9 @@ public class RatingServiceImpl implements RatingService {
         return response.getRatings();
     }
 
-    private String buildRequestUrl(ProductId productId, ApplicationUserId userId, InstanceInfo ratingServiceInfo) {
+    private String buildRequestUrl(ProductId productId, ApplicationUserId userId) {
 
-        return ratingServiceInfo.getHomePageUrl() +
+        return "http://rating-service/" +
                 "ratings/current_rating/" +
                 productId.getId() +
                 "/" +

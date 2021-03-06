@@ -34,11 +34,12 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
 
         try {
-            InstanceInfo userServiceInfo = discoveryClient
-                    .getNextServerFromEureka(servicesConfig.getUserService(), false);
+//            InstanceInfo userServiceInfo = discoveryClient
+//                    .getNextServerFromEureka(servicesConfig.getUserService(), false);
 
 
-            String url = userServiceInfo.getHomePageUrl() + "private/username/" + username;
+//            String url = userServiceInfo.getHomePageUrl() + "private/username/" + username;
+            String url = "http://user-service/private/username/" + username;
 
             log.info("Sending REST request to {}", url);
 

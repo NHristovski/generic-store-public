@@ -30,10 +30,10 @@ public class InventoryServiceImpl implements InventoryService {
     public Map<ProductId, StockResponseElement> getProductStocks(List<ProductId> productIds)
             throws RestRequestException {
         try {
-            InstanceInfo inventoryServiceInfo = discoveryClient
-                    .getNextServerFromEureka(productProperties.getInventoryService(), SECURE);
+//            InstanceInfo inventoryServiceInfo = discoveryClient
+//                    .getNextServerFromEureka(productProperties.getInventoryService(), SECURE);
 
-            String url = buildRequestUrl(inventoryServiceInfo);
+            String url = "http://inventory-service/stock";
 
             log.info("Sending request to {}", url);
 
@@ -59,11 +59,6 @@ public class InventoryServiceImpl implements InventoryService {
         }
 
         return response.getStocks();
-    }
-
-
-    private String buildRequestUrl(InstanceInfo inventoryServiceInfo) {
-        return inventoryServiceInfo.getHomePageUrl() + "stock";
     }
 
 }

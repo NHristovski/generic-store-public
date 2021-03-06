@@ -116,10 +116,10 @@ public class JwtUsernameAndPasswordAuthenticationFilter extends UsernamePassword
     }
 
     private GetApplicationUserResponse getApplicationUserResponse(Authentication auth) {
-        InstanceInfo userServiceInfo = discoveryClient
-                .getNextServerFromEureka(servicesConfig.getUserService(), false);
+//        InstanceInfo userServiceInfo = discoveryClient
+//                .getNextServerFromEureka(servicesConfig.getUserService(), false);
 
-        String url = userServiceInfo.getHomePageUrl() + "private/username/" + auth.getName();
+        String url = "http://user-service/private/username/" + auth.getName();
 
         GetApplicationUserResponse applicationUserResponse =
                 restTemplate.getForObject(url, GetApplicationUserResponse.class);

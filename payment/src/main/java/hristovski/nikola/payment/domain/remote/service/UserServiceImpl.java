@@ -22,11 +22,11 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public ApplicationUser getUserById(ApplicationUserId applicationUserId) throws RestRequestException {
-        InstanceInfo userServiceInfo = discoveryClient
-                .getNextServerFromEureka(USER_SERVICE, false);
+//        InstanceInfo userServiceInfo = discoveryClient
+//                .getNextServerFromEureka(USER_SERVICE, false);
 
 
-        String url = userServiceInfo.getHomePageUrl() + "private/" + applicationUserId.getId();
+        String url = "http://user-service/private/" + applicationUserId.getId();
 
         log.info("Sending REST request to {}", url);
 

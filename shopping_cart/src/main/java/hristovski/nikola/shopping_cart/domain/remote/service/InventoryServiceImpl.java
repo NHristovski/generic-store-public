@@ -22,10 +22,10 @@ public class InventoryServiceImpl implements InventoryService {
     @Override
     public boolean decrementStock(ProductId productId) throws RestRequestException {
         try {
-            InstanceInfo inventoryServiceInfo = discoveryClient
-                    .getNextServerFromEureka("inventory-service", SECURE);
+//            InstanceInfo inventoryServiceInfo = discoveryClient
+//                    .getNextServerFromEureka("inventory-service", SECURE);
 
-            String url = buildRequestUrl(inventoryServiceInfo, productId);
+            String url = buildRequestUrl(productId);
 
             log.info("Sending request to {}", url);
 
@@ -39,8 +39,8 @@ public class InventoryServiceImpl implements InventoryService {
         }
     }
 
-    private String buildRequestUrl(InstanceInfo inventoryServiceInfo, ProductId productId) {
-        return inventoryServiceInfo.getHomePageUrl() + "decrement_stock/" + productId.getId();
+    private String buildRequestUrl(ProductId productId) {
+        return "http://inventory-service/decrement_stock/" + productId.getId();
     }
 
     private Boolean extractStocksFromResponse(DecrementStockResponse response) {
