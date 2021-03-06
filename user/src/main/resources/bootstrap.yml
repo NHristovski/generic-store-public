@@ -1,9 +1,7 @@
 spring:
   cloud:
     config:
-      discovery:
-        enabled: true
-        serviceId: "configserver"
+      uri: http://config-server-service
       fail-fast: true
   application:
     name: user-service
