@@ -53,10 +53,10 @@ public class RatingServiceImpl implements RatingService {
     public Map<ProductId, RatingResponseElement> findRatings(List<ProductId> products, ApplicationUserId userId)
             throws RestRequestException {
         try {
-            InstanceInfo ratingServiceInfo = discoveryClient
-                    .getNextServerFromEureka(productProperties.getRatingService(), SECURE);
+//            InstanceInfo ratingServiceInfo = discoveryClient
+//                    .getNextServerFromEureka(productProperties.getRatingService(), SECURE);
 
-            String url = ratingServiceInfo.getHomePageUrl() + "ratings/rating";
+            String url = "http://rating-service/ratings/rating";
 
             log.info("Sending request to {}", url);
 
