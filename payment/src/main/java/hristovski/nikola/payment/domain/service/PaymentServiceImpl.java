@@ -57,7 +57,7 @@ public class PaymentServiceImpl implements PaymentService {
 
         domainEventPublisher.publish(new ShoppingCartBoughtEvent(
                 chargeRequest.getShoppingCartId(),
-                new Address(chargeRequest.getDeliveryAddress(), "number", "city", "postalcode")
+                new Address(chargeRequest.getDeliveryAddress(), " ", " ", " ")
         ));
     }
 
