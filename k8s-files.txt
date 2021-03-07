@@ -1,0 +1,1581 @@
+///////////////// user-service, rating-service, inventory-service
+
+SET DNS NAME TO THE CORRECT LOAD BALANCER  
+    
+KAFKA DEPLOYMENT STREAMZI: https://strimzi.io/quickstarts/
+
+ 
+ 
+  - kubectl create namespace kafka
+  - kubectl apply -f 'https://strimzi.io/install/latest?namespace=kafka' -n kafka
+  - kubectl apply -f zk-kafka.yml -n kafka 
+  
+zk-kafka.yml
+  
+apiVersion: kafka.strimzi.io/v1beta1
+kind: Kafka
+metadata:
+  name: my-cluster
+spec:
+  kafka:
+    version: 2.7.0
+    replicas: 1
+    listeners:
+      - name: plain
+        port: 9092
+        type: internal
+        tls: false
+      - name: tls
+        port: 9093
+        type: internal
+        tls: true
+    config:
+      offsets.topic.replication.factor: 1
+      transaction.state.log.replication.factor: 1
+      transaction.state.log.min.isr: 1
+      log.message.format.version: "2.7"
+      inter.broker.protocol.version: "2.7"
+    storage:
+      type: jbod
+      volumes:
+      - id: 0
+        type: persistent-claim
+        size: 10Gi
+        deleteClaim: false
+  zookeeper:
+    replicas: 1
+    storage:
+      type: persistent-claim
+      size: 10Gi
+      deleteClaim: false
+  entityOperator:
+    topicOperator: {}
+    userOperator: {}
+  
+
+my-cluster-kafka-bootstrap.kafka.svc.cluster.local    
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: zipkin
+    labels:
+        app: zipkin
+spec:
+    replicas: 1
+    selector:
+        matchLabels:
+            app: nginx
+    minReadySeconds: 10
+    strategy:
+        rollingUpdate:
+            maxSurge: 1
+            maxUnavailable: 0
+        type: RollingUpdate
+    template:
+        metadata:
+            name: zipkin
+            labels:
+                app: zipkin
+        spec:
+            containers:
+            - name: zipkin
+              image: openzipkin/zipkin
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: zipkin-service
+spec:
+  type: ClusterIP
+  selector:
+    app: zipkin
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 9411               
+        
+    
+===================== Service Discovery 
+      service-discovery:
+    image: nikolahristovski/service_registry:0.0.1-SNAPSHOT
+    container_name: service-discovery
+    depends_on:
+      - zookeeper
+      - broker
+    ports:
+      - "8761:8761"
+      
+      
+      
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: service-discovery
+    labels:
+        app: service-discovery
+spec:
+    replicas: 1
+    selector:
+        matchLabels:
+            app: service-discovery
+    minReadySeconds: 10
+    strategy:
+        rollingUpdate:
+            maxSurge: 1
+            maxUnavailable: 0
+        type: RollingUpdate
+    template:
+        metadata:
+            name: service-discovery
+            labels:
+                app: service-discovery
+        spec:
+            containers:
+            - name: service-discovery
+              image: nikolahristovski/service_registry:0.0.1-SNAPSHOT
+              ports:
+              - containerPort: 8761     
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: service-discovery-priv-service
+spec:
+  type: ClusterIP
+  selector:
+    app: service-discovery
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8761       
+    
+    
+    
+    
+    
+================= Cofing server
+  config-server:
+    image: nikolahristovski/config_server:0.0.1-SNAPSHOT
+    container_name: config-server
+    depends_on:
+      - service-discovery
+      - zookeeper
+      - broker
+      - zipkin    
+      
+      
+      
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: config-server
+    labels:
+        app: config-server
+spec:
+    replicas: 1
+    selector:
+        matchLabels:
+            app: config-server
+    minReadySeconds: 10
+    strategy:
+        rollingUpdate:
+            maxSurge: 1
+            maxUnavailable: 0
+        type: RollingUpdate
+    template:
+        metadata:
+            name: config-server
+            labels:
+                app: config-server
+        spec:
+            containers:
+            - name: config-server
+              image: nikolahristovski/config_server:0.0.1-SNAPSHOT
+              ports:
+              - containerPort: 8888
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: config-server-service
+spec:
+  type: ClusterIP
+  selector:
+    app: config-server
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8888
+              
+              
+              
+=============== AUTH
+  auth:
+    image: nikolahristovski/auth:0.0.1-SNAPSHOT
+    container_name: auth
+    depends_on:
+      - service-discovery
+      - config-server
+      - zookeeper
+      - broker
+      - zipkin              
+      
+      docker build . --build-arg VERSION=0.0.1-SNAPSHOT -t nikolahristovski/auth:0.0.1-SNAPSHOT
+      
+      
+      
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: auth
+    labels:
+        app: auth
+spec:
+    replicas: 1
+    selector:
+        matchLabels:
+            app: auth
+    minReadySeconds: 10
+    strategy:
+        rollingUpdate:
+            maxSurge: 1
+            maxUnavailable: 0
+        type: RollingUpdate
+    template:
+        metadata:
+            name: auth
+            labels:
+                app: auth
+        spec:
+            containers:
+            - name: auth
+              image: nikolahristovski/auth:0.0.1-SNAPSHOT
+              ports:
+              - containerPort: 9101
+              imagePullPolicy: Always  
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-service
+spec:
+  type: ClusterIP
+  selector:
+    app: auth
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 9101
+            
+            
+
+============================= API GATEWAY
+  api-gateway:
+    image: nikolahristovski/api_gateway:0.0.1-SNAPSHOT
+    container_name: api-gateway
+    depends_on:
+      - service-discovery
+      - config-server
+      - zookeeper
+      - broker
+      - zipkin
+    ports:
+      - "8762:8762"
+      
+      
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: api-gateway
+    labels:
+        app: api-gateway
+spec:
+    replicas: 1
+    selector:
+        matchLabels:
+            app: api-gateway
+    minReadySeconds: 10
+    strategy:
+        rollingUpdate:
+            maxSurge: 1
+            maxUnavailable: 0
+        type: RollingUpdate
+    template:
+        metadata:
+            name: api-gateway
+            labels:
+                app: api-gateway
+        spec:
+            containers:
+            - name: api-gateway
+              image: nikolahristovski/api_gateway:0.0.1-SNAPSHOT
+              ports:
+              - containerPort: 8762
+              imagePullPolicy: Always  
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-gateway
+spec:
+  type: ClusterIP
+  selector:
+    app: api-gateway
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8762
+---    
+apiVersion: v1
+kind: Service
+metadata:
+  name: apigateway-public-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: api-gateway
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8762        
+    
+    
+=================
+product:
+    image: nikolahristovski/product:0.0.1-SNAPSHOT
+    container_name: product
+    depends_on:
+      - service-discovery
+      - postgres-product
+      - config-server
+      - zookeeper
+      - broker
+      - zipkin
+  postgres-product:
+    image: postgres
+    container_name: postgres-product
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    volumes:
+      - product-data:/var/lib/postgresql/data    
+      
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: product
+    labels:
+        app: product
+spec:
+    replicas: 3
+    selector:
+        matchLabels:
+            app: product
+    minReadySeconds: 10
+    strategy:
+        rollingUpdate:
+            maxSurge: 1
+            maxUnavailable: 0
+        type: RollingUpdate
+    template:
+        metadata:
+            name: product
+            labels:
+                app: product
+        spec:
+            containers:
+            - name: product
+              image: nikolahristovski/product:0.0.1-SNAPSHOT
+              ports:
+              - containerPort: 8200
+              imagePullPolicy: Always  
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: product
+spec:
+  type: ClusterIP
+  selector:
+    app: product
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8200
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-product-config
+  labels:
+    app: postgres-product
+data:
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: password
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: postgres-product-pv-claim
+  labels:
+    app: postgres-product
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi  
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-product
+  labels:
+        app: postgres-product
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-product
+  template:
+    metadata:
+      name: postgres-product
+      labels:
+        app: postgres-product
+    spec:
+      containers:
+        - name: postgres-product
+          image: postgres
+          imagePullPolicy: "Always"
+          ports:
+            - containerPort: 5432
+          envFrom:
+            - configMapRef:
+                name: postgres-product-config
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: postgredb
+              subPath: postgres
+      volumes:
+        - name: postgredb
+          persistentVolumeClaim:
+            claimName: postgres-product-pv-claim
+---            
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-product-service
+spec:
+  type: ClusterIP
+  selector:
+    app: postgres-product
+  ports:
+  - protocol: TCP
+    port: 5432
+    targetPort: 5432
+    
+    
+    
+    
+    
+===================== USER
+
+  user:
+    image: nikolahristovski/user:0.0.1-SNAPSHOT
+    container_name: user
+    depends_on:
+      - service-discovery
+      - postgres-user
+      - config-server
+      - zookeeper
+      - broker
+      - zipkin
+  postgres-user:
+    image: postgres
+    container_name: postgres-user
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    volumes:
+      - user-data:/var/lib/postgresql/data    
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: user
+    labels:
+        app: user
+spec:
+    replicas: 1
+    selector:
+        matchLabels:
+            app: user
+    minReadySeconds: 10
+    strategy:
+        rollingUpdate:
+            maxSurge: 1
+            maxUnavailable: 0
+        type: RollingUpdate
+    template:
+        metadata:
+            name: user
+            labels:
+                app: user
+        spec:
+            containers:
+            - name: user
+              image: nikolahristovski/user:0.0.1-SNAPSHOT
+              ports:
+              - containerPort: 8080
+              imagePullPolicy: Always  
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-service
+spec:
+  type: ClusterIP
+  selector:
+    app: user
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8080
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-user-config
+  labels:
+    app: postgres-user
+data:
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: password
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: postgres-user-pv-claim
+  labels:
+    app: postgres-user
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 3Gi  
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-user
+  labels:
+        app: postgres-user
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-user
+  template:
+    metadata:
+      name: postgres-user
+      labels:
+        app: postgres-user
+    spec:
+      containers:
+        - name: postgres-user
+          image: postgres
+          imagePullPolicy: "Always"
+          ports:
+            - containerPort: 5432
+          envFrom:
+            - configMapRef:
+                name: postgres-user-config
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: postgredb
+              subPath: postgres
+      volumes:
+        - name: postgredb
+          persistentVolumeClaim:
+            claimName: postgres-user-pv-claim
+---            
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-user-service
+spec:
+  type: ClusterIP
+  selector:
+    app: postgres-user
+  ports:
+  - protocol: TCP
+    port: 5432
+    targetPort: 5432
+
+
+============================== SHOPPING CART
+shopping-cart:
+    image: nikolahristovski/shopping_cart:0.0.1-SNAPSHOT
+    container_name: shopping-cart
+    depends_on:
+      - service-discovery
+      - postgres-shopping-cart
+      - config-server
+      - zookeeper
+      - broker
+      - zipkin
+  postgres-shopping-cart:
+    image: postgres
+    container_name: postgres-shopping-cart
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    volumes:
+      - shopping-cart-data:/var/lib/postgresql/data
+      
+      
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: shopping-cart
+    labels:
+        app: shopping-cart
+spec:
+    replicas: 1
+    selector:
+        matchLabels:
+            app: shopping-cart
+    minReadySeconds: 10
+    strategy:
+        rollingUpdate:
+            maxSurge: 1
+            maxUnavailable: 0
+        type: RollingUpdate
+    template:
+        metadata:
+            name: shopping-cart
+            labels:
+                app: shopping-cart
+        spec:
+            containers:
+            - name: shopping-cart
+              image: nikolahristovski/shopping_cart:0.0.1-SNAPSHOT
+              ports:
+              - containerPort: 8777
+              imagePullPolicy: Always  
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: shopping-cart-service
+spec:
+  type: ClusterIP
+  selector:
+    app: shopping-cart
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8777
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-shopping-cart-config
+  labels:
+    app: postgres-shopping-cart
+data:
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: password
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: postgres-shopping-cart-pv-claim
+  labels:
+    app: postgres-shopping-cart
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 3Gi  
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-shopping-cart
+  labels:
+        app: postgres-shopping-cart
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-shopping-cart
+  template:
+    metadata:
+      name: postgres-shopping-cart
+      labels:
+        app: postgres-shopping-cart
+    spec:
+      containers:
+        - name: postgres-shopping-cart
+          image: postgres
+          imagePullPolicy: "Always"
+          ports:
+            - containerPort: 5432
+          envFrom:
+            - configMapRef:
+                name: postgres-shopping-cart-config
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: postgredb
+              subPath: postgres
+      volumes:
+        - name: postgredb
+          persistentVolumeClaim:
+            claimName: postgres-shopping-cart-pv-claim
+---            
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-shopping-cart-service
+spec:
+  type: ClusterIP
+  selector:
+    app: postgres-shopping-cart
+  ports:
+  - protocol: TCP
+    port: 5432
+    targetPort: 5432      
+    
+    
+    
+    
+================ RATING    
+    
+    
+    
+    
+    
+rating:
+    image: nikolahristovski/rating:0.0.1-SNAPSHOT
+    container_name: rating
+    depends_on:
+      - service-discovery
+      - postgres-rating
+      - config-server
+      - zookeeper
+      - broker
+      - zipkin
+  postgres-rating:
+    image: postgres
+    container_name: postgres-rating
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    volumes:
+      - rating-data:/var/lib/postgresql/data    
+      
+      
+    
+      
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: rating
+    labels:
+        app: rating
+spec:
+    replicas: 1
+    selector:
+        matchLabels:
+            app: rating
+    minReadySeconds: 10
+    strategy:
+        rollingUpdate:
+            maxSurge: 1
+            maxUnavailable: 0
+        type: RollingUpdate
+    template:
+        metadata:
+            name: rating
+            labels:
+                app: rating
+        spec:
+            containers:
+            - name: rating
+              image: nikolahristovski/rating:0.0.1-SNAPSHOT
+              ports:
+              - containerPort: 8205
+              imagePullPolicy: Always  
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rating-service
+spec:
+  type: ClusterIP
+  selector:
+    app: rating
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8205
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-rating-config
+  labels:
+    app: postgres-rating
+data:
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: password
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: postgres-rating-pv-claim
+  labels:
+    app: postgres-rating
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 3Gi  
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-rating
+  labels:
+        app: postgres-rating
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-rating
+  template:
+    metadata:
+      name: postgres-rating
+      labels:
+        app: postgres-rating
+    spec:
+      containers:
+        - name: postgres-rating
+          image: postgres
+          imagePullPolicy: "Always"
+          ports:
+            - containerPort: 5432
+          envFrom:
+            - configMapRef:
+                name: postgres-rating-config
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: postgredb
+              subPath: postgres
+      volumes:
+        - name: postgredb
+          persistentVolumeClaim:
+            claimName: postgres-rating-pv-claim
+---            
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-rating-service
+spec:
+  type: ClusterIP
+  selector:
+    app: postgres-rating
+  ports:
+  - protocol: TCP
+    port: 5432
+    targetPort: 5432      
+    
+    
+    
+========== PAYMENT
+payment:
+    image: nikolahristovski/payment:0.0.1-SNAPSHOT
+    container_name: payment
+    depends_on:
+      - service-discovery
+      - config-server
+      - zookeeper
+      - broker
+      - zipkin
+
+      
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: payment
+    labels:
+        app: payment
+spec:
+    replicas: 1
+    selector:
+        matchLabels:
+            app: payment
+    minReadySeconds: 10
+    strategy:
+        rollingUpdate:
+            maxSurge: 1
+            maxUnavailable: 0
+        type: RollingUpdate
+    template:
+        metadata:
+            name: payment
+            labels:
+                app: payment
+        spec:
+            containers:
+            - name: payment
+              image: nikolahristovski/payment:0.0.1-SNAPSHOT
+              ports:
+              - containerPort: 18080
+              imagePullPolicy: Always  
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: payment-service
+spec:
+  type: ClusterIP
+  selector:
+    app: payment
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 18080          
+    
+    
+    
+    
+    
+    
+    
+    
+=================== ORDER
+order:
+    image: nikolahristovski/order:0.0.1-SNAPSHOT
+    container_name: order
+    depends_on:
+      - service-discovery
+      - postgres-order
+      - config-server
+      - zookeeper
+      - broker
+      - zipkin
+  postgres-order:
+    image: postgres
+    container_name: postgres-order
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    volumes:
+      - order-data:/var/lib/postgresql/data
+
+      
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: order
+    labels:
+        app: order
+spec:
+    replicas: 1
+    selector:
+        matchLabels:
+            app: order
+    minReadySeconds: 10
+    strategy:
+        rollingUpdate:
+            maxSurge: 1
+            maxUnavailable: 0
+        type: RollingUpdate
+    template:
+        metadata:
+            name: order
+            labels:
+                app: order
+        spec:
+            containers:
+            - name: order
+              image: nikolahristovski/order:0.0.1-SNAPSHOT
+              ports:
+              - containerPort: 8555
+              imagePullPolicy: Always  
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-service
+spec:
+  type: ClusterIP
+  selector:
+    app: order
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8555
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-order-config
+  labels:
+    app: postgres-order
+data:
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: password
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: postgres-order-pv-claim
+  labels:
+    app: postgres-order
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 3Gi  
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-order
+  labels:
+        app: postgres-order
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-order
+  template:
+    metadata:
+      name: postgres-order
+      labels:
+        app: postgres-order
+    spec:
+      containers:
+        - name: postgres-order
+          image: postgres
+          imagePullPolicy: "Always"
+          ports:
+            - containerPort: 5432
+          envFrom:
+            - configMapRef:
+                name: postgres-order-config
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: postgredb
+              subPath: postgres
+      volumes:
+        - name: postgredb
+          persistentVolumeClaim:
+            claimName: postgres-order-pv-claim
+---            
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-order-service
+spec:
+  type: ClusterIP
+  selector:
+    app: postgres-order
+  ports:
+  - protocol: TCP
+    port: 5432
+    targetPort: 5432            
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+=============== INVENTORY
+  inventory:
+    image: nikolahristovski/inventory:0.0.1-SNAPSHOT
+    container_name: inventory
+    depends_on:
+      - service-discovery
+      - postgres-inventory
+      - config-server
+      - zookeeper
+      - broker
+      - zipkin
+  postgres-inventory:
+    image: postgres
+    container_name: postgres-inventory
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    volumes:
+      - inventory-data:/var/lib/postgresql/data    
+      
+      
+
+      
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: inventory
+    labels:
+        app: inventory
+spec:
+    replicas: 1
+    selector:
+        matchLabels:
+            app: inventory
+    minReadySeconds: 10
+    strategy:
+        rollingUpdate:
+            maxSurge: 1
+            maxUnavailable: 0
+        type: RollingUpdate
+    template:
+        metadata:
+            name: inventory
+            labels:
+                app: inventory
+        spec:
+            containers:
+            - name: inventory
+              image: nikolahristovski/inventory:0.0.1-SNAPSHOT
+              ports:
+              - containerPort: 8599
+              imagePullPolicy: Always  
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: inventory-service
+spec:
+  type: ClusterIP
+  selector:
+    app: inventory
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8599
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-inventory-config
+  labels:
+    app: postgres-inventory
+data:
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: password
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: postgres-inventory-pv-claim
+  labels:
+    app: postgres-inventory
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 3Gi  
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-inventory
+  labels:
+        app: postgres-inventory
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-inventory
+  template:
+    metadata:
+      name: postgres-inventory
+      labels:
+        app: postgres-inventory
+    spec:
+      containers:
+        - name: postgres-inventory
+          image: postgres
+          imagePullPolicy: "Always"
+          ports:
+            - containerPort: 5432
+          envFrom:
+            - configMapRef:
+                name: postgres-inventory-config
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: postgredb
+              subPath: postgres
+      volumes:
+        - name: postgredb
+          persistentVolumeClaim:
+            claimName: postgres-inventory-pv-claim
+---            
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-inventory-service
+spec:
+  type: ClusterIP
+  selector:
+    app: postgres-inventory
+  ports:
+  - protocol: TCP
+    port: 5432
+    targetPort: 5432            
+    
+    
+    
+    
+====================   FRONT END
+
+frontend:
+    image: nikolahristovski/frontend:0.0.1
+    container_name: frontend
+    depends_on:
+      - service-discovery
+      - config-server
+      - api-gateway
+      - auth
+      - product
+      - user
+      - shopping-cart
+      - rating
+      - payment
+      - order
+      - inventory
+      - zookeeper
+      - broker
+      - zipkin
+    ports:
+      - 80:80    
+          
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: frontend
+    labels:
+        app: frontend
+spec:
+    replicas: 1
+    selector:
+        matchLabels:
+            app: frontend
+    minReadySeconds: 10
+    strategy:
+        rollingUpdate:
+            maxSurge: 1
+            maxUnavailable: 0
+        type: RollingUpdate
+    template:
+        metadata:
+            name: frontend
+            labels:
+                app: frontend
+        spec:
+            containers:
+            - name: frontend
+              image: nikolahristovski/frontend:0.0.1
+              ports:
+              - containerPort: 80
+              imagePullPolicy: Always  
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: frontend
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80          
+    
+    
+    
+    
+    
+    
+    
+=========================== LOGGING
+
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: kube-logging
+
+
+elastic-search-svc
+kind: Service
+apiVersion: v1
+metadata:
+  name: elasticsearch
+  namespace: kube-logging
+  labels:
+    app: elasticsearch
+spec:
+  selector:
+    app: elasticsearch
+  clusterIP: None
+  ports:
+    - port: 9200
+      name: rest
+    - port: 9300
+      name: inter-node
+      
+      
+
+ELASTIC_SEARCH_STATEFULL_SET
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: es-cluster
+  namespace: kube-logging
+spec:
+  serviceName: elasticsearch
+  replicas: 1
+  selector:
+    matchLabels:
+      app: elasticsearch
+  template:
+    metadata:
+      labels:
+        app: elasticsearch
+    spec:
+      containers:
+      - name: elasticsearch
+        image: docker.elastic.co/elasticsearch/elasticsearch:7.2.0
+        resources:
+            limits:
+              cpu: 1000m
+            requests:
+              cpu: 100m
+        ports:
+        - containerPort: 9200
+          name: rest
+          protocol: TCP
+        - containerPort: 9300
+          name: inter-node
+          protocol: TCP
+        volumeMounts:
+        - name: data
+          mountPath: /usr/share/elasticsearch/data
+        env:
+          - name: cluster.name
+            value: k8s-logs
+          - name: node.name
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: discovery.seed_hosts
+            value: "es-cluster-0.elasticsearch"
+          - name: cluster.initial_master_nodes
+            value: "es-cluster-0"
+          - name: ES_JAVA_OPTS
+            value: "-Xms512m -Xmx512m"
+      initContainers:
+      - name: fix-permissions
+        image: busybox
+        command: ["sh", "-c", "chown -R 1000:1000 /usr/share/elasticsearch/data"]
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - name: data
+          mountPath: /usr/share/elasticsearch/data
+      - name: increase-vm-max-map
+        image: busybox
+        command: ["sysctl", "-w", "vm.max_map_count=262144"]
+        securityContext:
+          privileged: true
+      - name: increase-fd-ulimit
+        image: busybox
+        command: ["sh", "-c", "ulimit -n 65536"]
+        securityContext:
+          privileged: true
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+      labels:
+        app: elasticsearch
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 50Gi
+
+
+
+KIBANA
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: kibana
+  namespace: kube-logging
+  labels:
+    app: kibana
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 5601
+  selector:
+    app: kibana
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kibana
+  namespace: kube-logging
+  labels:
+    app: kibana
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kibana
+  template:
+    metadata:
+      labels:
+        app: kibana
+    spec:
+      containers:
+      - name: kibana
+        image: docker.elastic.co/kibana/kibana:7.2.0
+        resources:
+          limits:
+            cpu: 1000m
+          requests:
+            cpu: 100m
+        env:
+          - name: ELASTICSEARCH_URL
+            value: http://elasticsearch:9200
+        ports:
+        - containerPort: 5601      
+      
+      
+      
+
+
+======================= fluentd 
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: fluentd
+  namespace: kube-logging
+  labels:
+    app: fluentd
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: fluentd
+  labels:
+    app: fluentd
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  - namespaces
+  verbs:
+  - get
+  - list
+  - watch
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: fluentd
+roleRef:
+  kind: ClusterRole
+  name: fluentd
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+- kind: ServiceAccount
+  name: fluentd
+  namespace: kube-logging
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: fluentd
+  namespace: kube-logging
+  labels:
+    app: fluentd
+spec:
+  selector:
+    matchLabels:
+      app: fluentd
+  template:
+    metadata:
+      labels:
+        app: fluentd
+    spec:
+      serviceAccount: fluentd
+      serviceAccountName: fluentd
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      containers:
+      - name: fluentd
+        image: fluent/fluentd-kubernetes-daemonset:v1.4.2-debian-elasticsearch-1.1
+        env:
+          - name:  FLUENT_ELASTICSEARCH_HOST
+            value: "elasticsearch.kube-logging.svc.cluster.local"
+          - name:  FLUENT_ELASTICSEARCH_PORT
+            value: "9200"
+          - name: FLUENT_ELASTICSEARCH_SCHEME
+            value: "http"
+          - name: FLUENTD_SYSTEMD_CONF
+            value: disable
+        resources:
+          limits:
+            memory: 512Mi
+          requests:
+            cpu: 100m
+            memory: 200Mi
+        volumeMounts:
+        - name: varlog
+          mountPath: /var/log
+        - name: varlibdockercontainers
+          mountPath: /var/lib/docker/containers
+          readOnly: true
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: varlog
+        hostPath:
+          path: /var/log
+      - name: varlibdockercontainers
+        hostPath:
+          path: /var/lib/docker/containers
+      
+      
+      
+SEARCH IN KIBANA: kubernetes.namespace_name: "default"              add kubernetes.container_name and log       
